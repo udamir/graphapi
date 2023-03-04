@@ -1,5 +1,5 @@
 {
-  "name": "graphapi",
+  "name": "gqlapi",
   "version": "0.0.1",
   "description": "The GraphAPI Specification Repository",
   "module": "dist/esm/index.js",
@@ -10,7 +10,7 @@
     "browser"
   ],
   "browser": {
-    "./dist/cjs/index.js": "./browser/graphapi.js"
+    "./dist/cjs/index.js": "./browser/gqlapi.js"
   },
   "scripts": {
     "build": "tsc && tsc --module commonjs --outDir dist/cjs",

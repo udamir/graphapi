@@ -9,8 +9,8 @@ module.exports = function(options) {
     return {
         mode: "production",
         entry: {
-            "graphapi": path.join(__dirname, "./src/index.ts"),
-            "graphapi.min": path.join(__dirname, "./src/index.ts"),
+            "gqlapi": path.join(__dirname, "./src/index.ts"),
+            "gqlapi.min": path.join(__dirname, "./src/index.ts"),
         },
         output: {
             path: path.join(__dirname, "./browser/"),
@@ -30,7 +30,7 @@ module.exports = function(options) {
         },
 
         plugins: [
-            new webpack.BannerPlugin({ banner: `graphapi@${pkg.version}` }),
+            new webpack.BannerPlugin({ banner: `gqlapi@${pkg.version}` }),
             // new webpack.optimize.UglifyJsPlugin({ include: /\.min\.js$/, minimize: true})
         ],
 

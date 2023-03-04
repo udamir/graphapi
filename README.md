@@ -1,5 +1,5 @@
 # GraphAPI
-<img alt="npm" src="https://img.shields.io/npm/v/graphapi"> <img alt="npm" src="https://img.shields.io/npm/dm/graphapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/graphapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/graphapi">
+<img alt="npm" src="https://img.shields.io/npm/v/gqlapi"> <img alt="npm" src="https://img.shields.io/npm/dm/gqlapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/gqlapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/gqlapi">
 
 This package provides utils to convert GraphQL schema into GraphAPI document.
 The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema.
@@ -12,14 +12,14 @@ The GraphAPI Specification is GraphQL introspection alternative, but based on Js
 
 ## Installation
 ```SH
-npm install graphapi --save
+npm install gqlapi --save
 ```
 
 ## Usage
 
 ```ts
 import { buildSchema } from "graphql"
-import { buildFromSchema } from 'graphapi'
+import { buildFromSchema } from 'gqlapi'
 
 const graphapi = buildFromSchema(buildSchema(`
 type Todo {
