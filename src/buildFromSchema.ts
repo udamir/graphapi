@@ -7,8 +7,8 @@ import type {
 
 import type { 
   GraphApiSchema, GraphApiDirective, GraphApiInputValue, GraphApiNamedType, GraphApiEnum,
-  GraphApiObject, GraphApiTypes, GraphApiScalar, GraphApiField, GraphApiUnion,
-  GraphApiDirectiveSchema, GraphApiInputObject, GraphApiOperation, GraphApiBaseType
+  GraphApiDirectiveDefinition, GraphApiTypes, GraphApiScalar, GraphApiField, GraphApiUnion,
+  GraphApiObject, GraphApiInputObject, GraphApiOperation, GraphApiBaseType, GraphApiScalarType
 } from "./graphapi"
 
 const components = {
@@ -19,6 +19,13 @@ const components = {
   DirectiveDefinition: "directives",
   UnionTypeDefinition: "unions",
   EnumTypeDefinition: "enums"
+} as const
+
+const scalarMap: Record<string, GraphApiScalarType> = {
+  Int: 'number',
+  Float: 'number',
+  String: 'string',
+  Boolean: 'boolean',
 } as const
 
 type ComponentsKind = keyof typeof components
@@ -39,15 +46,24 @@ const getTypeKind = (gqlType: GraphQLNamedType): ComponentsKind => {
   return isScalarType(gqlType) ? "ScalarTypeDefinition" : gqlType.astNode!.kind
 }
 
-const transformType2Ref = (gqlType: GraphQLNullableType, nullable = true): GraphApiBaseType => {
+const getScalarType = (gqlType: GraphQLScalarType): GraphApiScalarType => {
+  return scalarMap[gqlType.name] || "string"
+}
+
+const transformType2Ref = (gqlType: GraphQLNullableType, field?: GraphQLField<any, any> | GraphQLInputField, nonNullable = false): GraphApiBaseType => {
   if (isNonNullType(gqlType)) {
-    return transformType2Ref(gqlType.ofType, false)
+    return transformType2Ref(gqlType.ofType, field, true)
   } else if (isListType(gqlType)) {
-    const items = transformType2Ref(gqlType.ofType)
-    return nullable ? { oneOf: [ { type: "array", items }, { type: 'null' } ] } : { type: "array", items }
+    const items = transformType2Ref(gqlType.ofType, field)
+    return !nonNullable ? { oneOf: [ { type: "array", items }, { type: 'null' } ] } : { type: "array", items }
   } else {
-    const $ref = `#/components/${components[getTypeKind(gqlType)]}/${gqlType.name}`
-    return nullable ? { oneOf: [ { $ref }, { type: "null" } ] } : { $ref }
+    const directives = field?.astNode?.directives
+    const $ref = {
+      $ref: `#/components/${components[getTypeKind(gqlType)]}/${gqlType.name}`,
+      ...field?.description ? { description: field.description } : {},
+      ...directives?.length ? { directives: directives.reduce(directiveNodeReducer, {}) } : {},
+    }
+    return !nonNullable ? { oneOf: [ $ref, { type: "null" } ] } : $ref
   }
 }
 
@@ -63,7 +79,7 @@ const transformOperations = (fields: Record<string, GraphQLField<any, any>>): Re
   for (const [ name, field ] of Object.entries(fields)) {
     operations[name] = {
       ...transfromField(field),
-      responce: transformType2Ref(field.type)
+      response: transformType2Ref(field.type, field)
     }
   }
   return operations
@@ -112,7 +128,7 @@ const transformNamedType = (baseType: GraphQLNamedType | GraphQLEnumValue | Grap
 const transformScalarType = (scalarType: GraphQLScalarType): GraphApiScalar => {
   return {
     ...transformNamedType(scalarType),
-    type: "string",
+    type: getScalarType(scalarType),
     ...scalarType.specifiedByURL ? { specifiedByURL: scalarType.specifiedByURL } : {}
   }
 }
@@ -128,7 +144,7 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
     }
     
     properties[name] = {
-      ...transformType2Ref(field.type, false),
+      ...transformType2Ref(field.type, field),
       ...field.args.length ? { args: field.args.reduce(inputValueReducer, {}) } : {}
     }
   }
@@ -145,7 +161,7 @@ const transfromUnionType = (unionType: GraphQLUnionType): GraphApiUnion => {
   return { 
     ...transformNamedType(unionType),
     type: "object",
-    oneOf: unionType.getTypes().map((item) => transformType2Ref(item, false))
+    oneOf: unionType.getTypes().map((item) => transformType2Ref(item))
   }
 }
 
@@ -170,7 +186,7 @@ const transformInputObjectType = (inputObjectType: GraphQLInputObjectType): Grap
     inputFields[name] = {
       ...transformNamedType(field),
       required: isNonNullType(field.type),
-      schema: transformType2Ref(field.type, false),
+      schema: transformType2Ref(field.type, field, true),
       ...field.defaultValue !== undefined ? { default: field.defaultValue } : {} // TODO: parse JSON ?
     }
   }
@@ -222,17 +238,17 @@ const transformInputValue = (arg: GraphQLArgument): GraphApiInputValue => {
   return {
     ...transformNamedType(arg),
     required: isNonNullType(arg.type),
-    schema: transformType2Ref(arg.type, false),
+    schema: transformType2Ref(arg.type, arg, true),
     ...arg.defaultValue !== undefined ? { default: arg.defaultValue } : {},
   }
 }
 
-const directiveSchemaReducer = (result: Record<string, GraphApiDirectiveSchema>, directive: GraphQLDirective) => {
+const directiveSchemaReducer = (result: Record<string, GraphApiDirectiveDefinition>, directive: GraphQLDirective) => {
   result[directive.name] = transformDirectiveSchema(directive)
   return result
 }
 
-const transformDirectiveSchema = (directive: GraphQLDirective): GraphApiDirectiveSchema => {
+const transformDirectiveSchema = (directive: GraphQLDirective): GraphApiDirectiveDefinition => {
   return {
     title: directive.name,
     ...directive.description ? { description: directive.description } : {},

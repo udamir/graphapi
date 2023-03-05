@@ -11,6 +11,8 @@ export type DirectiveLocation =
 export type GraphApiTypes = GraphApiObject | GraphApiScalar | GraphApiInterface |
   GraphApiUnion | GraphApiEnum | GraphApiInputObject | GraphApiList
 
+export type GraphApiScalarType = "string" | "number" | "boolean"
+
 export interface GraphApiSchema {
   // graphapi version
   graphapi: string
@@ -33,9 +35,8 @@ export interface GraphApiSchema {
     inputObjects?: Record<string, GraphApiInputObject>
 
     // directive schemas
-    directives?: Record<string, GraphApiDirectiveSchema>
+    directives?: Record<string, GraphApiDirectiveDefinition>
   }
-
 }
 
 export interface GraphApiOperation {
@@ -48,8 +49,8 @@ export interface GraphApiOperation {
   // operation arguments
   args?: Record<string, GraphApiInputValue>
 
-  // operation responce
-  responce: GraphApiBaseType
+  // operation response
+  response: GraphApiBaseType
 
   // Custom field: type derictives
   directives?: Record<string, GraphApiDirective>
@@ -81,7 +82,7 @@ export interface GraphApiNamedType extends GraphApiBaseType {
 // SCALAR
 export interface GraphApiScalar extends GraphApiNamedType {
   // kind = "SCALAR"
-  type: "string"
+  type: GraphApiScalarType
 
   // Custom field: specifiedByURL
   "specifiedByURL"?: string
@@ -165,7 +166,7 @@ export interface GraphApiInputValue {
   directives?: Record<string, any>
 }
 
-export interface GraphApiDirectiveSchema {
+export interface GraphApiDirectiveDefinition {
   // name
   title: string
 

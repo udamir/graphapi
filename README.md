@@ -2,7 +2,7 @@
 <img alt="npm" src="https://img.shields.io/npm/v/gqlapi"> <img alt="npm" src="https://img.shields.io/npm/dm/gqlapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/gqlapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/gqlapi">
 
 This package provides utils to convert GraphQL schema into GraphAPI document.
-The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema.
+The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema - OpenApi for GraphQl
 
 ## Features
 - JsonSchema based GraphQl document, similar to OpenApi
@@ -90,10 +90,12 @@ queries:
         required: false
         schema:
           $ref: '#/components/scalars/Boolean'
+          description: A default value of false
         default: false
-    responce:
+    response:
       oneOf:
         - $ref: '#/components/objects/Todo'
+          description: A Query with 1 required argument and 1 optional argument
         - type: 'null'
   todos:
     title: todos
@@ -107,12 +109,14 @@ queries:
           type: array
           items:
             $ref: '#/components/scalars/String'
-    responce:
+            description: Required argument that is a list that cannot contain null values
+    response:
       oneOf:
         - type: array
           items:
             oneOf:
               - $ref: '#/components/objects/Todo'
+                description: Returns a list (or null) that can contain null values
               - type: 'null'
         - type: 'null'
 mutations:
@@ -125,8 +129,9 @@ mutations:
         required: true
         schema:
           $ref: '#/components/inputObjects/TodoInputType'
-    responce:
+    response:
       $ref: '#/components/objects/Todo'
+      description: A Mutation with 1 required argument
 components:
   objects:
     Todo:
@@ -142,13 +147,18 @@ components:
         name:
           $ref: '#/components/scalars/String'
         completed:
-          $ref: '#/components/scalars/Boolean'
+          oneOf:
+            - $ref: '#/components/scalars/Boolean'
+            - type: 'null'
         color:
-          $ref: '#/components/enums/Color'
+          oneOf:
+            - $ref: '#/components/enums/Color'
+            - type: 'null'
         colors:
           type: array
           items:
             $ref: '#/components/enums/Color'
+            description: A field that requires an argument
           args:
             filter:
               title: filter
@@ -177,7 +187,7 @@ components:
     Boolean:
       title: Boolean
       description: The `Boolean` scalar type represents `true` or `false`.
-      type: string
+      type: boolean
   inputObjects:
     TodoInputType:
       title: TodoInputType
@@ -231,6 +241,7 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/Boolean'
+            description: Included when true.
       repeatable: false
     skip:
       title: skip
@@ -248,6 +259,7 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/Boolean'
+            description: Skipped when true.
       repeatable: false
     deprecated:
       title: deprecated
@@ -268,6 +280,11 @@ components:
           required: false
           schema:
             $ref: '#/components/scalars/String'
+            description: >-
+              Explains why this element was deprecated, usually also including a
+              suggestion for how to access supported similar data. Formatted
+              using the Markdown syntax, as specified by
+              [CommonMark](https://commonmark.org/).
           default: No longer supported
       repeatable: false
     specifiedBy:
@@ -282,6 +299,7 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/String'
+            description: The URL that specifies the behavior of this scalar.
       repeatable: false
 ```
 

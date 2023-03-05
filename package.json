@@ -1,6 +1,6 @@
 {
   "name": "gqlapi",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The GraphAPI Specification Repository",
   "module": "dist/esm/index.js",
   "main": "dist/cjs/index.js",
@@ -28,6 +28,10 @@
   ],
   "author": "Damir Yusipov",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/udamir/graphapi.git",
+    "type": "git"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.0",
     "@types/js-yaml": "^4.0.5",
