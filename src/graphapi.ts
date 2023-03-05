@@ -94,7 +94,7 @@ export interface GraphApiObject extends GraphApiNamedType {
   type: "object"
 
   // non-null
-  required?: string[]
+  required?: string[] | boolean
 
   // fields
   properties?: Record<string, GraphApiField>
@@ -120,7 +120,7 @@ export interface GraphApiEnum extends GraphApiNamedType {
   type: "string"
 
   // enumValues
-  oneOf: GraphApiNamedType[]
+  oneOf: GraphApiBaseType[]
 }
 
 // INPUT_OBJECT

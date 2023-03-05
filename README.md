@@ -90,12 +90,10 @@ queries:
         required: false
         schema:
           $ref: '#/components/scalars/Boolean'
-          description: A default value of false
         default: false
     response:
       oneOf:
         - $ref: '#/components/objects/Todo'
-          description: A Query with 1 required argument and 1 optional argument
         - type: 'null'
   todos:
     title: todos
@@ -109,14 +107,12 @@ queries:
           type: array
           items:
             $ref: '#/components/scalars/String'
-            description: Required argument that is a list that cannot contain null values
     response:
       oneOf:
         - type: array
           items:
             oneOf:
               - $ref: '#/components/objects/Todo'
-                description: Returns a list (or null) that can contain null values
               - type: 'null'
         - type: 'null'
 mutations:
@@ -131,7 +127,6 @@ mutations:
           $ref: '#/components/inputObjects/TodoInputType'
     response:
       $ref: '#/components/objects/Todo'
-      description: A Mutation with 1 required argument
 components:
   objects:
     Todo:
@@ -143,22 +138,27 @@ components:
         - colors
       properties:
         id:
+          title: id
           $ref: '#/components/scalars/ID'
         name:
+          title: name
           $ref: '#/components/scalars/String'
         completed:
+          title: completed
           oneOf:
             - $ref: '#/components/scalars/Boolean'
             - type: 'null'
         color:
+          title: color
           oneOf:
             - $ref: '#/components/enums/Color'
             - type: 'null'
         colors:
+          title: colors
+          description: A field that requires an argument
           type: array
           items:
             $ref: '#/components/enums/Color'
-            description: A field that requires an argument
           args:
             filter:
               title: filter
@@ -214,14 +214,10 @@ components:
       title: Color
       type: string
       oneOf:
-        - title: RED
-          description: Red color
-          type: string
+        - description: Red color
           enum:
             - RED
-        - title: GREEN
-          description: Green color
-          type: string
+        - description: Green color
           enum:
             - GREEN
   directives:
@@ -241,7 +237,6 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/Boolean'
-            description: Included when true.
       repeatable: false
     skip:
       title: skip
@@ -259,7 +254,6 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/Boolean'
-            description: Skipped when true.
       repeatable: false
     deprecated:
       title: deprecated
@@ -280,11 +274,6 @@ components:
           required: false
           schema:
             $ref: '#/components/scalars/String'
-            description: >-
-              Explains why this element was deprecated, usually also including a
-              suggestion for how to access supported similar data. Formatted
-              using the Markdown syntax, as specified by
-              [CommonMark](https://commonmark.org/).
           default: No longer supported
       repeatable: false
     specifiedBy:
@@ -299,7 +288,6 @@ components:
           required: true
           schema:
             $ref: '#/components/scalars/String'
-            description: The URL that specifies the behavior of this scalar.
       repeatable: false
 ```
 
