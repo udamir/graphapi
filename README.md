@@ -21,6 +21,16 @@ npm install gqlapi --save
 import { buildSchema } from "graphql"
 import { buildFromSchema } from 'gqlapi'
 
+const options = {
+  // false - oneOf: [{ type: "object" }, { type: "null" }]
+  // true  - type: ["object", "null"]
+  nullableArrayType: false // default: false
+
+  // false - oneOf: [ { enum: [RED] }, { enum: [BLUE] } ]
+  // true  - oneOf: [ { const: RED }, { const: BLUE } ]
+  enumItemsAsConst: false // dafault: false
+}
+
 const graphapi = buildFromSchema(buildSchema(`
 type Todo {
   id: ID!
@@ -66,7 +76,7 @@ type Mutation {
     todo: TodoInputType!
   ): Todo!
 }
-`))
+`), options)
 
 console.log(graphapi)
 ```
