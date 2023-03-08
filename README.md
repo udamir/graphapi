@@ -25,7 +25,7 @@ import { buildFromSchema } from 'gqlapi'
 const options = {
   // false - oneOf: [{ type: "object" }, { type: "null" }]
   // true  - type: ["object", "null"]
-  nullableArrayType: false // default: false
+  nullableArrayType: false, // default: false
 
   // false - oneOf: [ { enum: [RED] }, { enum: [BLUE] } ]
   // true  - oneOf: [ { const: RED }, { const: BLUE } ]
