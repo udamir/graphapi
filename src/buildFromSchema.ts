@@ -11,6 +11,8 @@ import type {
   GraphApiObject, GraphApiInputObject, GraphApiOperation, GraphApiBaseType, GraphApiScalarType
 } from "./graphapi"
 
+import { getScalarType } from "./getScalarType"
+
 const components = {
   ScalarTypeDefinition: "scalars",
   ObjectTypeDefinition: "objects",
@@ -19,13 +21,6 @@ const components = {
   DirectiveDefinition: "directives",
   UnionTypeDefinition: "unions",
   EnumTypeDefinition: "enums"
-} as const
-
-const scalarMap: Record<string, GraphApiScalarType> = {
-  Int: 'number',
-  Float: 'number',
-  String: 'string',
-  Boolean: 'boolean',
 } as const
 
 type ComponentsKind = keyof typeof components
@@ -44,10 +39,6 @@ const isScalarType = (gqlType: GraphQLNamedType): gqlType is GraphQLScalarType =
 
 const getTypeKind = (gqlType: GraphQLNamedType): ComponentsKind => {
   return isScalarType(gqlType) ? "ScalarTypeDefinition" : gqlType.astNode!.kind
-}
-
-const getScalarType = (gqlType: GraphQLScalarType): GraphApiScalarType => {
-  return scalarMap[gqlType.name] || "string"
 }
 
 const getType = (gqlType: GraphQLNamedType) => {
@@ -299,6 +290,7 @@ export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {
 
   return {
     graphapi: "0.0.1",
+    ...schema.description ? { description: schema.description } : {},
     ...qType ? { queries: transformOperations(qType.getFields(), options) } : {},
     ...mType ? { mutations: transformOperations(mType.getFields(), options) } : {},
     ...sType ? { subscriptions: transformOperations(sType.getFields(), options) } : {},
