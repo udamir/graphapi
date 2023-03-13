@@ -14,8 +14,8 @@ export type GraphApiTypes = GraphApiObject | GraphApiScalar | GraphApiInterface 
 export type GraphApiScalarType = "string" | "number" | "boolean"
 
 export interface GraphApiSchema {
-  // graphapi version
-  graphapi: string
+  // graphapi version 
+  graphapi: "0.0.2"
 
   // schema description
   description?: string
@@ -25,19 +25,23 @@ export interface GraphApiSchema {
   mutations?: Record<string, GraphApiOperation>
   subscriptions?: Record<string, GraphApiOperation>
 
-  components?: {
-    // named types
-    scalars?: Record<string, GraphApiScalar>
-    objects?: Record<string, GraphApiObject>
-    interfaces?: Record<string, GraphApiInterface>
-    unions?: Record<string, GraphApiUnion>
-    enums?: Record<string, GraphApiEnum>
-    inputObjects?: Record<string, GraphApiInputObject>
-
-    // directive schemas
-    directives?: Record<string, GraphApiDirectiveDefinition>
-  }
+  components?: GraphApiComponents
 }
+
+export interface GraphApiComponents {
+  // named types
+  scalars?: Record<string, GraphApiScalar>
+  objects?: Record<string, GraphApiObject>
+  interfaces?: Record<string, GraphApiInterface>
+  unions?: Record<string, GraphApiUnion>
+  enums?: Record<string, GraphApiEnum>
+  inputObjects?: Record<string, GraphApiInputObject>
+
+  // directive schemas
+  directives?: Record<string, GraphApiDirectiveDefinition>
+}
+
+export type GraphApiComponentsKind = keyof GraphApiComponents
 
 export interface GraphApiOperation {
   // name
@@ -61,13 +65,23 @@ export interface GraphApiDirective {
   $ref: string
 
   // directive metadata
-  meta: Record<string, any>  
+  meta?: Record<string, any>  
 }
 
 // Base Type
 export interface GraphApiBaseType extends JSONSchema4 {
   // description
   description?: string
+
+  // boolean not supported
+  required?: string[]
+
+  oneOf?: GraphApiBaseType[]
+  allOf?: GraphApiBaseType[]
+  anyOf?: GraphApiBaseType[]
+  not?: GraphApiBaseType[]
+  items?: GraphApiBaseType
+  properties?: Record<string, GraphApiBaseType>
 
   // Custom field: type derictives
   "directives"?: Record<string, GraphApiDirective>
@@ -83,9 +97,6 @@ export interface GraphApiNamedType extends GraphApiBaseType {
 export interface GraphApiScalar extends GraphApiNamedType {
   // kind = "SCALAR"
   type: GraphApiScalarType
-
-  // Custom field: specifiedByURL
-  "specifiedByURL"?: string
 }
 
 // OBJECT
@@ -94,10 +105,13 @@ export interface GraphApiObject extends GraphApiNamedType {
   type: "object"
 
   // non-null
-  required?: string[] | boolean
+  required?: string[]
 
   // fields
   properties?: Record<string, GraphApiField>
+
+  // interfaces
+  "interfaces"?: { $ref: string }[]
 }
 
 // INTERFACE
@@ -124,12 +138,18 @@ export interface GraphApiEnum extends GraphApiNamedType {
 }
 
 // INPUT_OBJECT
-export interface GraphApiInputObject extends GraphApiNamedType {
+export interface GraphApiInputObject {
   // kind = "INPUT_OBJECT"
-  type: "object"
+  title: string
+  
+  // description
+  description?: string
 
-  // Custom field: inputFields
-  "inputFields": Record<string, GraphApiInputValue>
+  // derictives
+  directives?: Record<string, GraphApiDirective>
+
+  // nputFields
+  inputFields: Record<string, GraphApiInputValue>
 }
 
 // LIST

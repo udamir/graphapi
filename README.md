@@ -1,13 +1,14 @@
 # GraphAPI
 <img alt="npm" src="https://img.shields.io/npm/v/gqlapi"> <img alt="npm" src="https://img.shields.io/npm/dm/gqlapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/gqlapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/graphapi">
 
-This package provides utils to convert GraphQL schema into GraphAPI document.
+This package provides utils to convert GraphQL schema into GraphAPI document and back.
 The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema - OpenApi for GraphQL
 
 ## Features
 - JsonSchema based GraphQL document, similar to OpenApi
 - Support custom directives in schema (meta) 
 - GraphAPI document can be build from GraphQL Schema or Introspection
+- GraphAPI document can be converted to GraphQL Schema 
 - Typescript syntax support out of the box
 - No dependencies, can be used in nodejs or browser
 
@@ -18,9 +19,10 @@ npm install gqlapi --save
 
 ## Usage
 
+### Build GraphAPI document from Schema or Introspection
 ```ts
 import { buildSchema, graphqlSync, getIntrospectionQuery } from "graphql"
-import { buildFromSchema } from 'gqlapi'
+import { buildFromSchema, buildFromIntrospection } from 'gqlapi'
 
 const options = {
   // false - oneOf: [{ type: "object" }, { type: "null" }]
@@ -37,9 +39,20 @@ const schema = buildSchema(data)
 const graphapi = buildFromSchema(schema, options)
 
 // build from GraphQL introspection
-// Important: only deprecated directives will be in result, as introspection not support custom directives meta
 const introspection = graphqlSync(data, getIntrospectionQuery()).data
 const graphapi = buildFromIntrospection(introspection, options)
+
+```
+
+> Important: only deprecated directives will be in result, as introspection not support custom directives meta
+
+### Print GraphQL schema document from GraphAPI document
+
+```ts
+import { printSchema } from 'gqlapi'
+
+const schema = printSchema(graphapi)
+console.log(schema)
 
 ```
 
@@ -97,7 +110,7 @@ type Mutation {
 ### Output result in yaml format: 
 
 ```yaml
-graphapi: 0.0.1
+graphapi: 0.0.2
 queries:
   todo:
     title: todo
@@ -215,7 +228,6 @@ components:
   inputObjects:
     TodoInputType:
       title: TodoInputType
-      type: object
       inputFields:
         name:
           title: name

@@ -8,7 +8,7 @@ import type {
 import type { 
   GraphApiSchema, GraphApiDirective, GraphApiInputValue, GraphApiNamedType, GraphApiEnum,
   GraphApiDirectiveDefinition, GraphApiTypes, GraphApiScalar, GraphApiField, GraphApiUnion,
-  GraphApiObject, GraphApiInputObject, GraphApiOperation, GraphApiBaseType, GraphApiScalarType
+  GraphApiObject, GraphApiInputObject, GraphApiOperation, GraphApiBaseType
 } from "./graphapi"
 
 import { getScalarType } from "./getScalarType"
@@ -58,6 +58,10 @@ const getType = (gqlType: GraphQLNamedType) => {
   }
 }
 
+const componentRef = (kind: ComponentsKind, name: string): string => {
+  return `#/components/${components[kind]}/${name}`
+}
+
 const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, nonNullable = false): GraphApiBaseType => {
   if (isNonNullType(gqlType)) {
     return transformType2Ref(gqlType.ofType, options, true)
@@ -69,7 +73,7 @@ const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, 
     return (nonNullable || options?.nullableArrayType) ? result : { oneOf: [ result, { type: 'null' } ] }
   } else {
     const $ref: GraphApiBaseType = { 
-      $ref: `#/components/${components[getTypeKind(gqlType)]}/${gqlType.name}`,
+      $ref: componentRef(getTypeKind(gqlType), gqlType.name),
       ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {}
     }
     return (nonNullable || options?.nullableArrayType) ? $ref : { oneOf: [ $ref, { type: "null" } ] }
@@ -121,7 +125,7 @@ const transformDirectiveNode = (node: ConstDirectiveNode): any => {
     return args
   }, {})
   return {
-    $ref: `#/components/directives/${node.name.value}`,
+    $ref: componentRef("DirectiveDefinition", node.name.value),
     ...meta && Object.keys(meta).length ? { meta } : {},
   }
 }
@@ -153,6 +157,7 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
   const properties: Record<string, GraphApiField> = {}
   const fields = objectType.getFields()
   const required: string[] = []
+  const interfaces = objectType.getInterfaces().map((item) => ({ $ref: componentRef(item.astNode!.kind, item.name) }))
 
   for (const [name, field] of Object.entries(fields)) {
     if (isNonNullType(field.type)) {
@@ -162,6 +167,7 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
     properties[name] = {
       ...transformNamedType(field),
       ...transformType2Ref(field.type, options),
+      // ...field.extensions ? { extends: field.extensions } : {},
       ...field.args.length ? { args: field.args.reduce(inputValueReducer(options), {}) } : {}
     }
   }
@@ -170,7 +176,8 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
     ...transformNamedType(objectType),
     type: "object",
     ...required.length ? { required } : {},
-    properties
+    properties,
+    ...interfaces.length ? { interfaces } : {},
   }
 }
 
@@ -210,7 +217,6 @@ const transformInputObjectType = (inputObjectType: GraphQLInputObjectType, optio
 
   return {
     ...transformNamedType(inputObjectType),
-    type: "object",
     inputFields
   }
 }
@@ -289,7 +295,7 @@ export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {
   const skip = [qType, mType, sType].reduce((r: string[], i) => i ? [...r, i.name] : r, [])
 
   return {
-    graphapi: "0.0.1",
+    graphapi: "0.0.2",
     ...schema.description ? { description: schema.description } : {},
     ...qType ? { queries: transformOperations(qType.getFields(), options) } : {},
     ...mType ? { mutations: transformOperations(mType.getFields(), options) } : {},

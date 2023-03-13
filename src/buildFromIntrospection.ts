@@ -14,6 +14,8 @@ import type {
 import { BuildOptions } from "./buildFromSchema"
 import { getScalarType } from "./getScalarType"
 
+const DEFAULT_DEPRECATION_REASON = 'No longer supported';
+
 const components = {
   SCALAR: "scalars",
   OBJECT: "objects",
@@ -23,6 +25,8 @@ const components = {
   UNION: "unions",
   ENUM: "enums"
 } as const
+
+type ComponentsKind = keyof typeof components
 
 const getType = (gqlType: IntrospectionNamedTypeRef) => {
   switch (gqlType.kind) {
@@ -40,6 +44,10 @@ const getType = (gqlType: IntrospectionNamedTypeRef) => {
   }
 }
 
+const componentRef = (kind: ComponentsKind, name: string): string => {
+  return `#/components/${components[kind]}/${name}`
+}
+
 const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions, nonNullable = false): GraphApiBaseType => {
   if (gqlType.kind === "NON_NULL") {
     return transformType2Ref(gqlType.ofType, options, true)
@@ -51,7 +59,7 @@ const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions,
     return (nonNullable || options?.nullableArrayType) ? result : { oneOf: [ result, { type: 'null' } ] }
   } else {
     const $ref: GraphApiBaseType = { 
-      $ref: `#/components/${components[gqlType.kind]}/${gqlType.name}`,
+      $ref: componentRef(gqlType.kind, gqlType.name),
       ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {}
     }
     return (nonNullable || options?.nullableArrayType) ? $ref : { oneOf: [ $ref, { type: "null" } ] }
@@ -84,8 +92,8 @@ const transformBaseType = (baseType: IntrospectionType | IntrospectionEnumValue 
     ...isDeprecated ? { 
       directives: {
         deprecated: {
-          $ref: `#/components/directives/deprecated`,
-          meta: { reason }
+          $ref: componentRef("DERICTIVE", "deprecated"),
+          meta: reason !== DEFAULT_DEPRECATION_REASON ? { reason } : {}
         }
       }
     } : {}
@@ -110,6 +118,7 @@ const transformScalarType = (scalarType: IntrospectionScalarType, options: Build
 const transformObjectType = (objectType: IntrospectionObjectType | IntrospectionInterfaceType, options: BuildOptions): GraphApiObject => {
   const properties: Record<string, GraphApiField> = {}
   const required: string[] = []
+  const interfaces = objectType.interfaces.map(({ kind, name }) => ({ $ref: componentRef(kind, name)}))
 
   for (const field of objectType.fields) {
     if (field.type.kind === "NON_NULL") {
@@ -127,7 +136,8 @@ const transformObjectType = (objectType: IntrospectionObjectType | Introspection
     ...transformNamedType(objectType),
     type: "object",
     ...required.length ? { required } : {},
-    properties
+    properties,
+    ...interfaces.length ? { interfaces } : {} 
   }
 }
 
@@ -167,7 +177,6 @@ const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType,
 
   return {
     ...transformNamedType(inputObjectType),
-    type: "object",
     inputFields
   }
 }
@@ -260,7 +269,7 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
   }
 
   return types.reduce(typeReducer, {
-    graphapi: "0.0.1",
+    graphapi: "0.0.2",
     ...description ? { description } : {},
     components: {
       ...directives.length ? { directives: directives.reduce(directiveSchemaReducer(options), {}) } : {}
