@@ -1,4 +1,4 @@
-import type { 
+import { 
   ConstValueNode, GraphQLArgument, GraphQLDirective, GraphQLNonNull, GraphQLSchema,
   GraphQLNullableType, GraphQLScalarType, GraphQLObjectType, ConstDirectiveNode,
   GraphQLInterfaceType, GraphQLUnionType, GraphQLEnumType, GraphQLInputObjectType,
@@ -25,20 +25,29 @@ const components = {
 
 type ComponentsKind = keyof typeof components
 
+// workaround to avoid graphql dependency
+const isGraphQLType = (gqlType: GraphQLNullableType, typeName: string): boolean => {
+  const printName = Object.prototype.toString.call(gqlType)
+  return printName === `[object ${typeName}]`
+}
+
 const isNonNullType = (gqlType: GraphQLNullableType): gqlType is GraphQLNonNull<any> => {
-  return (gqlType as any).__proto__.constructor.name === "GraphQLNonNull"
+  // return gqlType instanceof GraphQLNonNull
+  return isGraphQLType(gqlType, "GraphQLNonNull")
 }
 
 const isListType = (gqlType: GraphQLNullableType): gqlType is GraphQLList<any> => {
-  return (gqlType as any).__proto__.constructor.name === "GraphQLList"
+  // return gqlType instanceof GraphQLList
+  return isGraphQLType(gqlType, "GraphQLList")
 }
 
 const isScalarType = (gqlType: GraphQLNamedType): gqlType is GraphQLScalarType => {
-  return (gqlType as any).__proto__.constructor.name === "GraphQLScalarType"
+  // return gqlType instanceOf GraphQLScalarType
+  return isGraphQLType(gqlType, "GraphQLScalarType")
 }
 
 const getTypeKind = (gqlType: GraphQLNamedType): ComponentsKind => {
-  return isScalarType(gqlType) ? "ScalarTypeDefinition" : gqlType.astNode!.kind
+  return isScalarType(gqlType) || !gqlType.astNode ? "ScalarTypeDefinition" : gqlType.astNode!.kind
 }
 
 const getType = (gqlType: GraphQLNamedType) => {
