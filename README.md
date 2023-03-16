@@ -1,7 +1,7 @@
 # GraphAPI
 <img alt="npm" src="https://img.shields.io/npm/v/gqlapi"> <img alt="npm" src="https://img.shields.io/npm/dm/gqlapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/gqlapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/graphapi">
 
-This package provides utils to convert GraphQL schema into GraphAPI document and back - [online demo](https://udamir.github.io/graphapi/)
+This package provides utils to convert GraphQL schema into GraphAPI document and back - [online demo](https://udamir.github.io/graphapi/)<br/>
 The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema - OpenApi for GraphQL
 
 ## Features
