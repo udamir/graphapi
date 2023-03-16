@@ -166,8 +166,8 @@ const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType,
   const inputFields: Record<string, GraphApiInputValue> = {}
   const fields = inputObjectType.inputFields
 
-  for (const [ name, field ] of Object.entries(fields)) {
-    inputFields[name] = {
+  for (const field of fields) {
+    inputFields[field.name] = {
       ...transformNamedType(field),
       required: field.type.kind === "NON_NULL",
       schema: transformType2Ref(field.type, options, true),
@@ -211,7 +211,7 @@ const transformDirectiveSchema = (directive: IntrospectionDirective, options: Bu
 }
 
 export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options: BuildOptions = {}): GraphApiSchema => {
-  const { queryType, mutationType, subscriptionType, description, types, directives } = __schema
+  const { queryType, mutationType, subscriptionType, description, types = [], directives = [] } = __schema
 
   const getOperationType = (gqlType: IntrospectionType) => {
     switch (gqlType.name) {

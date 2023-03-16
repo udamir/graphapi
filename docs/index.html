@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css" crossorigin="anonymous" />
+  <!-- react -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- babel -->
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.21.3/babel.min.js"></script>
+  <!-- codemirror -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <!-- gqlapi / graphql -->
+  <script src="./js/gqlapi.min.js"></script>
+  <script src="./js/graphql.min.js"></script>
+  <title>GraphAPI Converter</title>
+</head>
+<body>
+  <a href="https://github.com/udamir/graphapi" style="position: absolute; top: 0px; right: 0px; z-index: 10">
+    <img loading="lazy" width="120" height="120" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
+  </a>
+  <div id="root"></div>
+</body>
+
+<script>
+  let gqlText = `type Todo {
+  id: ID!
+  name: String!
+  completed: Boolean
+  color: Color
+
+  "A field that requires an argument"
+  colors(filter: [Color!]!): [Color!]!
+}
+
+enum Color {
+  "Red color"
+  RED
+
+  "Green color"
+  GREEN
+}
+
+input TodoInputType {
+  name: String!
+  completed: Boolean @deprecated(reason: "not used")
+  color: Color = RED
+}
+
+type Query {
+  "A Query with 1 required argument and 1 optional argument"
+  todo(
+    id: ID!
+
+    "A default value of false"
+    isCompleted: Boolean = false
+): Todo
+
+"""
+  Returns a list (or null) that can contain null values
+"""
+todos(
+    "Required argument that is a list that cannot contain null values"
+    ids: [String!]!
+  ): [Todo]
+}
+
+type Mutation {
+  "A Mutation with 1 required argument"
+  create_todo(
+    todo: TodoInputType!
+  ): Todo!
+}
+`
+
+  let jsonText = `{
+  "__schema": {
+    "queryType": {
+      "name": "Query"
+    },
+    "mutationType": {
+      "name": "Mutation"
+    },
+    "types": [
+      {
+        "kind": "OBJECT",
+        "name": "Todo",
+        "fields": [
+          {
+            "name": "id",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "ID"
+              }
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "completed",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "color",
+            "args": [],
+            "type": {
+              "kind": "ENUM",
+              "name": "Color"
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "colors",
+            "description": "A field that requires an argument",
+            "args": [
+              {
+                "name": "filter",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "NON_NULL",
+                      "ofType": {
+                        "kind": "ENUM",
+                        "name": "Color"
+                      }
+                    }
+                  }
+                },
+                "isDeprecated": false
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "ENUM",
+                    "name": "Color"
+                  }
+                }
+              }
+            },
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "SCALAR",
+        "name": "ID",
+        "description": "The 'ID' scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as '4') or integer (such as '4') input value will be accepted as an ID."
+      },
+      {
+        "kind": "SCALAR",
+        "name": "String",
+        "description": "The 'String' scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."
+      },
+      {
+        "kind": "SCALAR",
+        "name": "Boolean",
+        "description": "The 'Boolean' scalar type represents 'true' or 'false'."
+      },
+      {
+        "kind": "ENUM",
+        "name": "Color",
+        "enumValues": [
+          {
+            "name": "RED",
+            "description": "Red color",
+            "isDeprecated": false
+          },
+          {
+            "name": "GREEN",
+            "description": "Green color",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "TodoInputType",
+        "inputFields": [
+          {
+            "name": "name",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "completed",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "color",
+            "type": {
+              "kind": "ENUM",
+              "name": "Color"
+            },
+            "defaultValue": "RED",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Query",
+        "fields": [
+          {
+            "name": "todo",
+            "description": "A Query with 1 required argument and 1 optional argument",
+            "args": [
+              {
+                "name": "id",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID"
+                  }
+                },
+                "isDeprecated": false
+              },
+              {
+                "name": "isCompleted",
+                "description": "A default value of false",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean"
+                },
+                "defaultValue": "false",
+                "isDeprecated": false
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Todo"
+            },
+            "isDeprecated": false
+          },
+          {
+            "name": "todos",
+            "description": "Returns a list (or null) that can contain null values",
+            "args": [
+              {
+                "name": "ids",
+                "description": "Required argument that is a list that cannot contain null values",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "NON_NULL",
+                      "ofType": {
+                        "kind": "SCALAR",
+                        "name": "String"
+                      }
+                    }
+                  }
+                },
+                "isDeprecated": false
+              }
+            ],
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Todo"
+              }
+            },
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Mutation",
+        "fields": [
+          {
+            "name": "create_todo",
+            "description": "A Mutation with 1 required argument",
+            "args": [
+              {
+                "name": "todo",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "TodoInputType"
+                  }
+                },
+                "isDeprecated": false
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Todo"
+              }
+            },
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      }
+    ],
+    "directives": [
+    ]
+  }
+}`
+
+  let apiText = `---
+graphapi: 0.0.2
+queries:
+  todo:
+    title: todo
+    description: A Query with 1 required argument and 1 optional argument
+    args:
+      id:
+        title: id
+        required: true
+        schema:
+          $ref: '#/components/scalars/ID'
+      isCompleted:
+        title: isCompleted
+        description: A default value of false
+        required: false
+        schema:
+          $ref: '#/components/scalars/Boolean'
+        default: false
+    response:
+      $ref: '#/components/objects/Todo'
+      type:
+        - object
+        - 'null'
+  todos:
+    title: todos
+    description: Returns a list (or null) that can contain null values
+    args:
+      ids:
+        title: ids
+        description: Required argument that is a list that cannot contain null values
+        required: true
+        schema:
+          type: array
+          items:
+            $ref: '#/components/scalars/String'
+    response:
+      type:
+        - array
+        - 'null'
+      items:
+        $ref: '#/components/objects/Todo'
+        type:
+          - object
+          - 'null'
+mutations:
+  create_todo:
+    title: create_todo
+    description: A Mutation with 1 required argument
+    args:
+      todo:
+        title: todo
+        required: true
+        schema:
+          $ref: '#/components/inputObjects/TodoInputType'
+    response:
+      $ref: '#/components/objects/Todo'
+components:
+  objects:
+    Todo:
+      title: Todo
+      type: object
+      required:
+        - id
+        - name
+        - colors
+      properties:
+        id:
+          title: id
+          $ref: '#/components/scalars/ID'
+        name:
+          title: name
+          $ref: '#/components/scalars/String'
+        completed:
+          title: completed
+          $ref: '#/components/scalars/Boolean'
+          type:
+            - boolean
+            - 'null'
+        color:
+          title: color
+          $ref: '#/components/enums/Color'
+          type:
+            - string
+            - 'null'
+        colors:
+          title: colors
+          description: A field that requires an argument
+          type: array
+          items:
+            $ref: '#/components/enums/Color'
+          args:
+            filter:
+              title: filter
+              required: true
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/enums/Color'
+  scalars:
+    ID:
+      title: ID
+      description: >-
+        The "ID" scalar type represents a unique identifier, often used to
+        refetch an object or as key for a cache. The ID type appears in a JSON
+        response as a String; however, it is not intended to be human-readable.
+        When expected as an input type, any string (such as "4") or integer
+        (such as "4") input value will be accepted as an ID.
+      type: string
+    String:
+      title: String
+      description: >-
+        The "String" scalar type represents textual data, represented as UTF-8
+        character sequences. The String type is most often used by GraphQL to
+        represent free-form human-readable text.
+      type: string
+    Boolean:
+      title: Boolean
+      description: The "Boolean" scalar type represents "true" or "false".
+      type: boolean
+  enums:
+    Color:
+      title: Color
+      type: string
+      oneOf:
+        - description: Red color
+          enum:
+            - RED
+        - description: Green color
+          enum:
+            - GREEN
+  inputObjects:
+    TodoInputType:
+      title: TodoInputType
+      inputFields:
+        name:
+          title: name
+          required: true
+          schema:
+            $ref: '#/components/scalars/String'
+        completed:
+          title: completed
+          directives:
+            deprecated:
+              $ref: '#/components/directives/deprecated'
+              meta:
+                reason: not used
+          required: false
+          schema:
+            $ref: '#/components/scalars/Boolean'
+        color:
+          title: color
+          required: false
+          schema:
+            $ref: '#/components/enums/Color'
+          default: RED
+  directives:
+    include:
+      title: include
+      description: >-
+        Directs the executor to include this field or fragment only when the
+        "if" argument is true.
+      locations:
+        - FIELD
+        - FRAGMENT_SPREAD
+        - INLINE_FRAGMENT
+      args:
+        if:
+          title: if
+          description: Included when true.
+          required: true
+          schema:
+            $ref: '#/components/scalars/Boolean'
+      repeatable: false
+    skip:
+      title: skip
+      description: >-
+        Directs the executor to skip this field or fragment when the "if"
+        argument is true.
+      locations:
+        - FIELD
+        - FRAGMENT_SPREAD
+        - INLINE_FRAGMENT
+      args:
+        if:
+          title: if
+          description: Skipped when true.
+          required: true
+          schema:
+            $ref: '#/components/scalars/Boolean'
+      repeatable: false
+    deprecated:
+      title: deprecated
+      description: Marks an element of a GraphQL schema as no longer supported.
+      locations:
+        - FIELD_DEFINITION
+        - ARGUMENT_DEFINITION
+        - INPUT_FIELD_DEFINITION
+        - ENUM_VALUE
+      args:
+        reason:
+          title: reason
+          description: >-
+            Explains why this element was deprecated, usually also including a
+            suggestion for how to access supported similar data. Formatted using
+            the Markdown syntax, as specified by
+            [CommonMark](https://commonmark.org/).
+          required: false
+          schema:
+            $ref: '#/components/scalars/String'
+          default: No longer supported
+      repeatable: false
+    specifiedBy:
+      title: specifiedBy
+      description: Exposes a URL that specifies the behavior of this scalar.
+      locations:
+        - SCALAR
+      args:
+        url:
+          title: url
+          description: The URL that specifies the behavior of this scalar.
+          required: true
+          schema:
+            $ref: '#/components/scalars/String'
+      repeatable: false
+`
+</script>
+
+<script> 
+  const buildSchema = (source, sourceType = "graphql") => {
+    try {
+      if (sourceType === "graphql") {
+        const schema = GraphQL.buildSchema(source, { noLocation: true })
+        return GraphApi.buildFromSchema(schema, { nullableArrayType: true })
+      } else {
+        const schema = JSON.parse(source)
+        return GraphApi.buildFromIntrospection(schema, { nullableArrayType: true })
+      }
+    } catch (error) {
+      return { 
+        error: {
+          message: error.message,
+          locations: error.locations || [] 
+        }
+      }
+    }
+  }
+
+  const printSchema = (graphapi) => {
+    return GraphApi.printSchema(graphapi)
+  }
+</script>
+
+<script>
+  const useCodeMirror = (onReady, params = {}) => {
+    const [element, setElement] = React.useState()
+
+    const ref = React.useCallback((node) => {
+      if (!node) return;
+      setElement(node);
+    }, []);
+
+    React.useEffect(() => {
+      if (!element) return;
+
+      const editor = CodeMirror.fromTextArea(element, {
+        styleActiveLine: true,
+        lineNumbers: true,
+        lineWrapping: true,
+        foldGutter: true,
+        ...params
+      });
+      editor.setSize("100%", "100%");
+
+      onReady(editor)
+    }, [element]);
+
+    return { ref };
+  }
+</script>
+
+<script type="text/babel">
+  const CodeMirrorEditor = (props = {}) => {
+    const { ref } = useCodeMirror(props.onReady, props.params)
+
+    return (
+      <textarea 
+        ref={ref} 
+        name={props.name || props.path}
+        defaultValue={props.value}
+        autoComplete="off"
+        autoFocus={props.autoFocus}
+      />
+    )
+  }
+</script>
+  
+<script type="text/babel">
+  let tabChange = false
+  const Layout = (props) => {
+    const leftEditorRef = React.useRef(null)
+    const rightEditorRef = React.useRef(null)
+    const [resultType, setResultType] = React.useState("yaml")
+    const [tab, setTab] = React.useState("gql2api")
+
+    const convert = () => {
+      if (!rightEditorRef.current) { return }
+      const source = leftEditorRef.current.getValue()
+      if (tab === "gql2api" || tab === "json2api") {
+        const graphapi = buildSchema(source, tab === "gql2api" ? "graphql" : "json")
+    
+        const text = (resultType === "yaml") 
+          ? jsyaml.dump(graphapi, { noRefs: true, quotingType: '"' })
+          : JSON.stringify(graphapi, null, 2)
+        rightEditorRef.current.setValue(text)
+      } else {
+        const text = printSchema(jsyaml.load(source))
+        rightEditorRef.current.setValue(text)
+      }
+    }
+
+    const onLeftReady = (editor) => {
+      leftEditorRef.current = editor
+      editor.on("change", (e) => {
+        rightEditorRef.current.setValue("")
+        if (tabChange) { 
+          tabChange = false
+        } else {
+          switch (tab) {
+            case "gql2api": gqlText = e.getValue(); break;
+            case "json2api": jsonText = e.getValue(); break;
+            case "api2gql": apiText = e.getValue(); break;
+          }
+        }
+      } )
+    }
+
+    React.useEffect(() => {
+      if (!leftEditorRef.current) { return }
+      tabChange = true
+      switch (tab) {
+        case "gql2api": leftEditorRef.current.setValue(gqlText); break;
+        case "json2api": leftEditorRef.current.setValue(jsonText); break;
+        case "api2gql": leftEditorRef.current.setValue(apiText); break;
+      }
+    }, [tab])
+
+    return (
+      <>
+        <div className="tabs">
+          <ul>
+            <li className={`tab ${tab === "gql2api" ? " active" : ""}`} onClick={() => setTab("gql2api")}><a>GraphQL to GraphAPI</a></li>
+            <li className={`tab ${tab === "json2api" ? " active" : ""}`} onClick={() => setTab("json2api")}><a>Introspection to GraphAPI</a></li>
+            <li className={`tab ${tab === "api2gql" ? " active" : ""}`} onClick={() => setTab("api2gql")}><a>GraphAPI to GraphQL</a></li>
+          </ul>
+  
+        </div>
+        <div className="body">
+          <div id="left" className="editor">
+            <div class="header">
+              <button onClick={convert}>Convert</button>
+            </div>
+            <CodeMirrorEditor name="left" onReady={onLeftReady} value={gqlText}/>
+          </div>
+          <div id="right" className="editor">
+            <div class="header">
+              <div className={tab === "api2gql" ? "hidden" : ""}>
+                <label for="format">Output format: </label>
+                <select name="format" id="format" onChange={e => setResultType(e.target.value)}>
+                  <option value="yaml">yaml</option>
+                  <option value="json">json</option>
+                </select>
+              </div>
+            </div>
+            <CodeMirrorEditor name="right" onReady={(e) => rightEditorRef.current = e} params={{readOnly: "true"}} />
+          </div>
+        </div>
+      </>
+    )
+  }
+</script>
+
+<style>
+  html {
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  #root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .body {
+    height: calc(100% - 33px);
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .header {
+    display: flex;
+    height: 24px;
+    padding: 4px 32px;
+    justify-content: "space-between";
+    background-color: lightgray;
+  }
+
+  .editor {
+    height: calc(100% - 32px);
+    width: 50%;
+    float: left;
+  }
+
+  ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  li a:hover:not(.active) {
+    background-color: gray;
+  }
+
+  .active {
+    background-color: #04AA6D;
+  }
+
+  .tab {
+    float: left;
+  }
+
+  li a {
+    display: block;
+    padding: 7px 16px;
+    text-decoration: none;
+  }
+
+</style>
+
+
+<script type="text/babel">
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<Layout />);
+</script>
+
+</html>

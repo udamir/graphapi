@@ -1,115 +1,3 @@
-# GraphAPI
-<img alt="npm" src="https://img.shields.io/npm/v/gqlapi"> <img alt="npm" src="https://img.shields.io/npm/dm/gqlapi?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/gqlapi"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/graphapi">
-
-This package provides utils to convert GraphQL schema into GraphAPI document and back - [online demo](https://udamir.github.io/graphapi/)
-The GraphAPI Specification is GraphQL introspection alternative, but based on JsonSchema - OpenApi for GraphQL
-
-## Features
-- JsonSchema based GraphQL document, similar to OpenApi
-- Support custom directives in schema (meta) 
-- GraphAPI document can be build from GraphQL Schema or Introspection
-- GraphAPI document can be converted to GraphQL Schema 
-- Typescript syntax support out of the box
-- No dependencies, can be used in nodejs or browser
-
-## Installation
-```SH
-npm install gqlapi --save
-```
-
-## Usage
-
-### Build GraphAPI document from Schema or Introspection
-```ts
-import { buildSchema, graphqlSync, getIntrospectionQuery } from "graphql"
-import { buildFromSchema, buildFromIntrospection } from 'gqlapi'
-
-const options = {
-  // false - oneOf: [{ type: "object" }, { type: "null" }]
-  // true  - type: ["object", "null"]
-  nullableArrayType: false, // default: false
-
-  // false - oneOf: [ { enum: [RED] }, { enum: [BLUE] } ]
-  // true  - oneOf: [ { const: RED }, { const: BLUE } ]
-  enumItemsAsConst: false // dafault: false
-}
-
-// build from GraphQL schema
-const schema = buildSchema(data)
-const graphapi = buildFromSchema(schema, options)
-
-// build from GraphQL introspection
-const introspection = graphqlSync(data, getIntrospectionQuery()).data
-const graphapi = buildFromIntrospection(introspection, options)
-
-```
-
-> Important: only deprecated directives will be in result, as introspection not support custom directives meta
-
-### Print GraphQL schema document from GraphAPI document
-
-```ts
-import { printSchema } from 'gqlapi'
-
-const schema = printSchema(graphapi)
-console.log(schema)
-
-```
-
-## Example
-
-### Input data:
-
-```graphql
-type Todo {
-  id: ID!
-  name: String!
-  completed: Boolean
-  color: Color
-
-  "A field that requires an argument"
-  colors(filter: [Color!]!): [Color!]!
-}
-
-input TodoInputType {
-  name: String!
-  completed: Boolean
-  color: Color=RED
-}
-
-enum Color {
-  "Red color"
-  RED
-  "Green color"
-  GREEN
-}
-
-type Query {
-  "A Query with 1 required argument and 1 optional argument"
-  todo(
-    id: ID!,
-    "A default value of false"
-    isCompleted: Boolean=false
-  ): Todo
-
-  "Returns a list (or null) that can contain null values"
-  todos(
-    "Required argument that is a list that cannot contain null values"
-    ids: [String!]!
-  ): [Todo]
-}
-
-type Mutation {
-  "A Mutation with 1 required argument"
-  create_todo(
-    todo: TodoInputType!
-  ): Todo!
-}
-```
-
-### Output result in yaml format: 
-
-```yaml
 graphapi: 0.0.2
 queries:
   todo:
@@ -129,9 +17,10 @@ queries:
           $ref: '#/components/scalars/Boolean'
         default: false
     response:
-      oneOf:
-        - $ref: '#/components/objects/Todo'
-        - type: 'null'
+      $ref: '#/components/objects/Todo'
+      type:
+        - object
+        - 'null'
   todos:
     title: todos
     description: Returns a list (or null) that can contain null values
@@ -145,13 +34,14 @@ queries:
           items:
             $ref: '#/components/scalars/String'
     response:
-      oneOf:
-        - type: array
-          items:
-            oneOf:
-              - $ref: '#/components/objects/Todo'
-              - type: 'null'
-        - type: 'null'
+      type:
+        - array
+        - 'null'
+      items:
+        $ref: '#/components/objects/Todo'
+        type:
+          - object
+          - 'null'
 mutations:
   create_todo:
     title: create_todo
@@ -182,14 +72,16 @@ components:
           $ref: '#/components/scalars/String'
         completed:
           title: completed
-          oneOf:
-            - $ref: '#/components/scalars/Boolean'
-            - type: 'null'
+          $ref: '#/components/scalars/Boolean'
+          type:
+            - boolean
+            - 'null'
         color:
           title: color
-          oneOf:
-            - $ref: '#/components/enums/Color'
-            - type: 'null'
+          $ref: '#/components/enums/Color'
+          type:
+            - string
+            - 'null'
         colors:
           title: colors
           description: A field that requires an argument
@@ -225,6 +117,17 @@ components:
       title: Boolean
       description: The `Boolean` scalar type represents `true` or `false`.
       type: boolean
+  enums:
+    Color:
+      title: Color
+      type: string
+      oneOf:
+        - description: Red color
+          enum:
+            - RED
+        - description: Green color
+          enum:
+            - GREEN
   inputObjects:
     TodoInputType:
       title: TodoInputType
@@ -245,17 +148,6 @@ components:
           schema:
             $ref: '#/components/enums/Color'
           default: RED
-  enums:
-    Color:
-      title: Color
-      type: string
-      oneOf:
-        - description: Red color
-          enum:
-            - RED
-        - description: Green color
-          enum:
-            - GREEN
   directives:
     include:
       title: include
@@ -325,16 +217,3 @@ components:
           schema:
             $ref: '#/components/scalars/String'
       repeatable: false
-```
-
-## Documentation
-TBD
-
-## Contributing
-When contributing, keep in mind that it is an objective of `graphapi` to have no package dependencies. This may change in the future, but for now, no-dependencies.
-
-Please run the unit tests before submitting your PR: `npm test`. Hopefully your PR includes additional unit tests to illustrate your change/modification!
-
-## License
-
-MIT
