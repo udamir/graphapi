@@ -25,8 +25,8 @@ import { buildSchema, graphqlSync, getIntrospectionQuery } from "graphql"
 import { buildFromSchema, buildFromIntrospection } from 'gqlapi'
 
 const options = {
-  // false - oneOf: [{ type: "object" }, { type: "null" }]
-  // true  - type: ["object", "null"]
+  // false - { type: "object", nullable: true }
+  // true  - { type: ["object", "null"] }
   nullableArrayType: false, // default: false
 
   // false - oneOf: [ { enum: [RED] }, { enum: [BLUE] } ]
@@ -129,9 +129,8 @@ queries:
           $ref: '#/components/scalars/Boolean'
         default: false
     response:
-      oneOf:
-        - $ref: '#/components/objects/Todo'
-        - type: 'null'
+      $ref: '#/components/objects/Todo'
+      nullable: true
   todos:
     title: todos
     description: Returns a list (or null) that can contain null values
@@ -145,13 +144,11 @@ queries:
           items:
             $ref: '#/components/scalars/String'
     response:
-      oneOf:
-        - type: array
-          items:
-            oneOf:
-              - $ref: '#/components/objects/Todo'
-              - type: 'null'
-        - type: 'null'
+      type: array
+      nullable: true
+      items:
+        $ref: '#/components/objects/Todo'
+        nullable: true
 mutations:
   create_todo:
     title: create_todo
@@ -182,14 +179,12 @@ components:
           $ref: '#/components/scalars/String'
         completed:
           title: completed
-          oneOf:
-            - $ref: '#/components/scalars/Boolean'
-            - type: 'null'
+          $ref: '#/components/scalars/Boolean'
+          nullable: true
         color:
           title: color
-          oneOf:
-            - $ref: '#/components/enums/Color'
-            - type: 'null'
+          $ref: '#/components/enums/Color'
+          nullable: true
         colors:
           title: colors
           description: A field that requires an argument

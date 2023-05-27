@@ -54,15 +54,17 @@ const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions,
   } else if (gqlType.kind === "LIST") {
     const result: GraphApiBaseType = { 
       type: (nonNullable || !options?.nullableArrayType) ? "array" : ["array", "null"],
-      items: transformType2Ref(gqlType.ofType, options)
+      items: transformType2Ref(gqlType.ofType, options),
+      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
     }
-    return (nonNullable || options?.nullableArrayType) ? result : { oneOf: [ result, { type: 'null' } ] }
+    return result
   } else {
     const $ref: GraphApiBaseType = { 
       $ref: componentRef(gqlType.kind, gqlType.name),
-      ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {}
+      ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {},
+      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
     }
-    return (nonNullable || options?.nullableArrayType) ? $ref : { oneOf: [ $ref, { type: "null" } ] }
+    return $ref
   }
 }
 
@@ -269,7 +271,7 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
   }
 
   return types.reduce(typeReducer, {
-    graphapi: "0.0.2",
+    graphapi: "0.0.3",
     ...description ? { description } : {},
     components: {
       ...directives.length ? { directives: directives.reduce(directiveSchemaReducer(options), {}) } : {}

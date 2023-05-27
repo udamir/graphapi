@@ -15,7 +15,7 @@ export type GraphApiScalarType = "string" | "number" | "boolean"
 
 export interface GraphApiSchema {
   // graphapi version 
-  graphapi: "0.0.2"
+  graphapi: "0.0.3"
 
   // schema description
   description?: string
@@ -82,6 +82,7 @@ export interface GraphApiBaseType extends JSONSchema4 {
   not?: GraphApiBaseType[]
   items?: GraphApiBaseType
   properties?: Record<string, GraphApiBaseType>
+  nullable?: boolean
 
   // Custom field: type derictives
   "directives"?: Record<string, GraphApiDirective>

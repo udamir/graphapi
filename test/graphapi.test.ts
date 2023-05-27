@@ -31,6 +31,16 @@ describe("Build GraphApi", () => {
 
     expect(graphapi).toMatchObject(example)
   })
+
+  it("should build graphapi from introspection", async () => {
+
+    const source = JSON.parse(loadFile("example.json"))
+    const graphapi = buildFromIntrospection(source, { nullableArrayType: false, enumItemsAsConst: true })
+
+    const example2 = YAML.load(loadFile("example2.yaml")) as object
+
+    expect(graphapi).toMatchObject(example2)
+  })
 })
 
 

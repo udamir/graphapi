@@ -18,9 +18,7 @@ queries:
         default: false
     response:
       $ref: '#/components/objects/Todo'
-      type:
-        - object
-        - 'null'
+      nullable: true
   todos:
     title: todos
     description: Returns a list (or null) that can contain null values
@@ -34,14 +32,11 @@ queries:
           items:
             $ref: '#/components/scalars/String'
     response:
-      type:
-        - array
-        - 'null'
+      type: array
+      nullable: true
       items:
         $ref: '#/components/objects/Todo'
-        type:
-          - object
-          - 'null'
+        nullable: true
 mutations:
   create_todo:
     title: create_todo
@@ -73,15 +68,11 @@ components:
         completed:
           title: completed
           $ref: '#/components/scalars/Boolean'
-          type:
-            - boolean
-            - 'null'
+          nullable: true
         color:
           title: color
           $ref: '#/components/enums/Color'
-          type:
-            - string
-            - 'null'
+          nullable: true
         colors:
           title: colors
           description: A field that requires an argument
@@ -123,11 +114,9 @@ components:
       type: string
       oneOf:
         - description: Red color
-          enum:
-            - RED
+          const: RED
         - description: Green color
-          enum:
-            - GREEN
+          const: GREEN
   inputObjects:
     TodoInputType:
       title: TodoInputType

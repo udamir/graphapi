@@ -192,7 +192,7 @@ function printTypeRef (schema?: GraphApiBaseType, nullable = false): string {
   if (!schema) { return "" }
   const { $ref, oneOf, type } = schema
   const arrType = Array.isArray(type) ? type : [type]
-  const postfix = (nullable || arrType.includes("null")) ? "" : "!"
+  const postfix = (nullable || schema.nullable || arrType.includes("null")) ? "" : "!"
   if ($ref) {
     return $ref.split("/").pop() + postfix
   } else if (arrType.includes("array")) {

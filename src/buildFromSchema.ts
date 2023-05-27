@@ -77,15 +77,17 @@ const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, 
   } else if (isListType(gqlType)) {
     const result: GraphApiBaseType = { 
       type: (nonNullable || !options?.nullableArrayType) ? "array" : ["array", "null"],
-      items: transformType2Ref(gqlType.ofType, options)
+      items: transformType2Ref(gqlType.ofType, options),
+      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
     }
-    return (nonNullable || options?.nullableArrayType) ? result : { oneOf: [ result, { type: 'null' } ] }
+    return  result
   } else {
     const $ref: GraphApiBaseType = { 
       $ref: componentRef(getTypeKind(gqlType), gqlType.name),
-      ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {}
+      ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {},
+      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
     }
-    return (nonNullable || options?.nullableArrayType) ? $ref : { oneOf: [ $ref, { type: "null" } ] }
+    return $ref
   }
 }
 
@@ -304,7 +306,7 @@ export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {
   const skip = [qType, mType, sType].reduce((r: string[], i) => i ? [...r, i.name] : r, [])
 
   return {
-    graphapi: "0.0.2",
+    graphapi: "0.0.3",
     ...schema.description ? { description: schema.description } : {},
     ...qType ? { queries: transformOperations(qType.getFields(), options) } : {},
     ...mType ? { mutations: transformOperations(mType.getFields(), options) } : {},
