@@ -565,14 +565,14 @@ components:
 </script>
 
 <script> 
-  const buildSchema = (source, sourceType = "graphql", nullableArrayType = false, enumItemsAsConst = false) => {
+  const buildSchema = (source, sourceType = "graphql", disableStringEnums = false) => {
     try {
       if (sourceType === "graphql") {
         const schema = GraphQL.buildSchema(source, { noLocation: true })
-        return GraphApi.buildFromSchema(schema, { nullableArrayType, enumItemsAsConst })
+        return GraphApi.buildFromSchema(schema, { disableStringEnums })
       } else {
         const schema = JSON.parse(source)
-        return GraphApi.buildFromIntrospection(schema, { nullableArrayType, enumItemsAsConst })
+        return GraphApi.buildFromIntrospection(schema, { disableStringEnums })
       }
     } catch (error) {
       return { 
@@ -639,15 +639,14 @@ components:
     const leftEditorRef = React.useRef(null)
     const rightEditorRef = React.useRef(null)
     const [resultType, setResultType] = React.useState("yaml")
-    const [nullableArray, setNullableArray] = React.useState(false)
-    const [enumAsConst, setEnumAsConst] = React.useState(false)
+    const [disableStringEnums, setDisableStringEnums] = React.useState(false)
     const [tab, setTab] = React.useState("gql2api")
 
     const convert = () => {
       if (!rightEditorRef.current) { return }
       const source = leftEditorRef.current.getValue()
       if (tab === "gql2api" || tab === "json2api") {
-        const graphapi = buildSchema(source, tab === "gql2api" ? "graphql" : "json", nullableArray, enumAsConst)
+        const graphapi = buildSchema(source, tab === "gql2api" ? "graphql" : "json", disableStringEnums)
     
         const text = (resultType === "yaml") 
           ? jsyaml.dump(graphapi, { noRefs: true, quotingType: '"' })
@@ -713,12 +712,8 @@ components:
                   </select>
                 </span>
                 <span className="param">
-                  <label for="nullableArrayType">Nullable via array type:</label>
-                  <input type="checkbox" id="nullableArrayType" onChange={e => setNullableArray(e.target.checked)} />
-                </span>
-                <span className="param">  
-                  <label for="enumItemsAsConst">Enum items as const:</label>
-                  <input type="checkbox" id="enumItemsAsConst" onChange={e => setEnumAsConst(e.target.checked)} />
+                  <label for="disableStringEnums">Disable String Enums:</label>
+                  <input type="checkbox" id="disableStringEnums" onChange={e => setDisableStringEnums(e.target.checked)} />
                 </span>
               </div>
             </div>

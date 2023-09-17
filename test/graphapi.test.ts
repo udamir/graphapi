@@ -48,3 +48,54 @@ describe("Print schema from GraphApi", () => {
     expect(graphapi).toMatchObject(graphapi2)
   })
 })
+
+describe("Test options", () => {
+  it("should enabled simple enum by default for graphql schema", () => {
+    const source = `
+      enum Color {
+        RED
+        GREEN
+      }
+    `
+    const schema = buildSchema(source, { noLocation: true })
+    const graphapi = buildFromSchema(schema)
+
+    expect(graphapi).toMatchObject({
+      components: {
+        enums: {
+          Color: {
+            title: 'Color',
+            type: 'string',
+            enum: ['RED', 'GREEN']
+          }
+        }
+      }
+    })
+  })
+
+  it("should disable simple enum with option  for graphql schema", () => {
+    const source = `
+      enum Color {
+        RED
+        GREEN
+      }
+    `
+    const schema = buildSchema(source, { noLocation: true })
+    const graphapi = buildFromSchema(schema, { disableStringEnums: true })
+
+    expect(graphapi).toMatchObject({
+      components: {
+        enums: {
+          Color: {
+            title: 'Color',
+            type: 'string',
+            values: [
+              { value: 'RED' },
+              { value: 'GREEN' }
+            ]
+          }
+        }
+      }
+    })
+  })
+})

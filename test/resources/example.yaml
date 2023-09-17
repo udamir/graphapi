@@ -58,20 +58,15 @@ components:
         - colors
       properties:
         id:
-          title: id
           type: string
           format: ID
         name:
-          title: name
           type: string
         completed:
-          title: completed
           type: boolean
         color:
-          title: color
           $ref: '#/components/enums/Color'
         colors:
-          title: colors
           description: A field that requires an argument
           type: array
           items:
@@ -102,10 +97,8 @@ components:
         - name
       properties:
         name:
-          title: name
           type: string
         completed:
-          title: completed
           directives:
             deprecated:
               $ref: '#/components/directives/deprecated'
@@ -113,7 +106,6 @@ components:
                 reason: not used
           type: boolean
         color:
-          title: color
           $ref: '#/components/enums/Color'
           default: RED
   directives:
@@ -152,38 +144,4 @@ components:
           if:
             type: boolean
             description: Skipped when true.
-      repeatable: false
-    deprecated:
-      title: deprecated
-      description: Marks an element of a GraphQL schema as no longer supported.
-      locations:
-        - FIELD_DEFINITION
-        - ARGUMENT_DEFINITION
-        - INPUT_FIELD_DEFINITION
-        - ENUM_VALUE
-      args:
-        type: object
-        properties:
-          reason:
-            type: string
-            description: >-
-              Explains why this element was deprecated, usually also including a
-              suggestion for how to access supported similar data. Formatted
-              using the Markdown syntax, as specified by
-              [CommonMark](https://commonmark.org/).
-            default: No longer supported
-      repeatable: false
-    specifiedBy:
-      title: specifiedBy
-      description: Exposes a URL that specifies the behavior of this scalar.
-      locations:
-        - SCALAR
-      args:
-        type: object
-        required:
-          - url
-        properties:
-          url:
-            type: string
-            description: The URL that specifies the behavior of this scalar.
       repeatable: false

@@ -117,7 +117,7 @@ const transformObjectType = (objectType: IntrospectionObjectType | Introspection
     }
     
     properties[field.name] = {
-      ...transformNamedType(field),
+      ...transformBaseType(field),
       ...transformType2Ref(field.type, options, true),
       ...field.args.length ? { args: transformArgs(field.args, options) } : {}
     }
@@ -141,7 +141,7 @@ const transfromUnionType = (unionType: IntrospectionUnionType, options: BuildOpt
 }
 
 const transformEnumType = (enumType: IntrospectionEnumType, options: BuildOptions): GraphApiEnum => {
-  const simpleEnum = !enumType.enumValues.find((item) => item.isDeprecated || item.description)
+  const simpleEnum = !options.disableStringEnums && !enumType.enumValues.find((item) => item.isDeprecated || item.description)
 
   return {
     ...transformNamedType(enumType),
@@ -183,7 +183,9 @@ const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType,
 }
 
 const directiveSchemaReducer = (options: BuildOptions) => (result: Record<string, GraphApiDirectiveDefinition>, directive: IntrospectionDirective) => {
-  result[directive.name] = transformDirectiveSchema(directive, options)
+  if (!['specifiedBy', 'deprecated'].includes(directive.name)) {
+    result[directive.name] = transformDirectiveSchema(directive, options)
+  }
   return result
 }
 

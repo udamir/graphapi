@@ -25,13 +25,9 @@ import { buildSchema, graphqlSync, getIntrospectionQuery } from "graphql"
 import { buildFromSchema, buildFromIntrospection } from 'gqlapi'
 
 const options = {
-  // false - { type: "object", nullable: true }
-  // true  - { type: ["object", "null"] }
-  nullableArrayType: false, // default: false
-
-  // false - oneOf: [ { enum: [RED] }, { enum: [BLUE] } ]
-  // true  - oneOf: [ { const: RED }, { const: BLUE } ]
-  enumItemsAsConst: false // dafault: false
+  // false - { enum: ['RED', 'BLUE'] }
+  // true  - { values: [ { value: "RED" }, { value: "BLUE" }] }
+  disableStringEnums: false, // default: false
 }
 
 // build from GraphQL schema
@@ -71,28 +67,30 @@ type Todo {
   colors(filter: [Color!]!): [Color!]!
 }
 
-input TodoInputType {
-  name: String!
-  completed: Boolean
-  color: Color=RED
-}
-
 enum Color {
   "Red color"
   RED
+
   "Green color"
   GREEN
+}
+
+input TodoInputType {
+  name: String!
+  completed: Boolean @deprecated(reason: "not used")
+  color: Color = RED
 }
 
 type Query {
   "A Query with 1 required argument and 1 optional argument"
   todo(
-    id: ID!,
+    id: ID!
+
     "A default value of false"
-    isCompleted: Boolean=false
+    isCompleted: Boolean = false
   ): Todo
 
-  "Returns a list (or null) that can contain null values"
+  """ Returns a list (or null) that can contain null values """
   todos(
     "Required argument that is a list that cannot contain null values"
     ids: [String!]!
@@ -110,57 +108,55 @@ type Mutation {
 ### Output result in yaml format: 
 
 ```yaml
-graphapi: 0.0.2
+graphapi: 0.1.0
 queries:
   todo:
     title: todo
     description: A Query with 1 required argument and 1 optional argument
     args:
-      id:
-        title: id
-        required: true
-        schema:
-          $ref: '#/components/scalars/ID'
-      isCompleted:
-        title: isCompleted
-        description: A default value of false
-        required: false
-        schema:
-          $ref: '#/components/scalars/Boolean'
-        default: false
-    response:
-      $ref: '#/components/objects/Todo'
-      nullable: true
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: ID
+        isCompleted:
+          type: boolean
+          description: A default value of false
+          default: false
+    $ref: '#/components/objects/Todo'
+    nullable: true
   todos:
     title: todos
     description: Returns a list (or null) that can contain null values
     args:
-      ids:
-        title: ids
-        description: Required argument that is a list that cannot contain null values
-        required: true
-        schema:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
           type: array
           items:
-            $ref: '#/components/scalars/String'
-    response:
-      type: array
+            type: string
+          description: Required argument that is a list that cannot contain null values
+    type: array
+    items:
+      $ref: '#/components/objects/Todo'
       nullable: true
-      items:
-        $ref: '#/components/objects/Todo'
-        nullable: true
+    nullable: true
 mutations:
   create_todo:
     title: create_todo
     description: A Mutation with 1 required argument
     args:
-      todo:
-        title: todo
-        required: true
-        schema:
+      type: object
+      required:
+        - todo
+      properties:
+        todo:
           $ref: '#/components/inputObjects/TodoInputType'
-    response:
-      $ref: '#/components/objects/Todo'
+    $ref: '#/components/objects/Todo'
 components:
   objects:
     Todo:
@@ -172,85 +168,56 @@ components:
         - colors
       properties:
         id:
-          title: id
-          $ref: '#/components/scalars/ID'
+          type: string
+          format: ID
         name:
-          title: name
-          $ref: '#/components/scalars/String'
+          type: string
         completed:
-          title: completed
-          $ref: '#/components/scalars/Boolean'
-          nullable: true
+          type: boolean
         color:
-          title: color
           $ref: '#/components/enums/Color'
-          nullable: true
         colors:
-          title: colors
           description: A field that requires an argument
           type: array
           items:
             $ref: '#/components/enums/Color'
           args:
-            filter:
-              title: filter
-              required: true
-              schema:
+            type: object
+            required:
+              - filter
+            properties:
+              filter:
                 type: array
                 items:
                   $ref: '#/components/enums/Color'
-  scalars:
-    ID:
-      title: ID
-      description: >-
-        The `ID` scalar type represents a unique identifier, often used to
-        refetch an object or as key for a cache. The ID type appears in a JSON
-        response as a String; however, it is not intended to be human-readable.
-        When expected as an input type, any string (such as `"4"`) or integer
-        (such as `4`) input value will be accepted as an ID.
-      type: string
-    String:
-      title: String
-      description: >-
-        The `String` scalar type represents textual data, represented as UTF-8
-        character sequences. The String type is most often used by GraphQL to
-        represent free-form human-readable text.
-      type: string
-    Boolean:
-      title: Boolean
-      description: The `Boolean` scalar type represents `true` or `false`.
-      type: boolean
-  inputObjects:
-    TodoInputType:
-      title: TodoInputType
-      inputFields:
-        name:
-          title: name
-          required: true
-          schema:
-            $ref: '#/components/scalars/String'
-        completed:
-          title: completed
-          required: false
-          schema:
-            $ref: '#/components/scalars/Boolean'
-        color:
-          title: color
-          required: false
-          schema:
-            $ref: '#/components/enums/Color'
-          default: RED
   enums:
     Color:
       title: Color
       type: string
-      oneOf:
-        - description: Red color
-          enum:
-            - RED
-        - description: Green color
-          enum:
-            - GREEN
+      values:
+        - value: RED
+          description: Red color
+        - value: GREEN
+          description: Green color
+  inputObjects:
+    TodoInputType:
+      title: TodoInputType
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        completed:
+          directives:
+            deprecated:
+              $ref: '#/components/directives/deprecated'
+              meta:
+                reason: not used
+          type: boolean
+        color:
+          $ref: '#/components/enums/Color'
+          default: RED
   directives:
     include:
       title: include
@@ -262,12 +229,13 @@ components:
         - FRAGMENT_SPREAD
         - INLINE_FRAGMENT
       args:
-        if:
-          title: if
-          description: Included when true.
-          required: true
-          schema:
-            $ref: '#/components/scalars/Boolean'
+        type: object
+        required:
+          - if
+        properties:
+          if:
+            type: boolean
+            description: Included when true.
       repeatable: false
     skip:
       title: skip
@@ -279,46 +247,13 @@ components:
         - FRAGMENT_SPREAD
         - INLINE_FRAGMENT
       args:
-        if:
-          title: if
-          description: Skipped when true.
-          required: true
-          schema:
-            $ref: '#/components/scalars/Boolean'
-      repeatable: false
-    deprecated:
-      title: deprecated
-      description: Marks an element of a GraphQL schema as no longer supported.
-      locations:
-        - FIELD_DEFINITION
-        - ARGUMENT_DEFINITION
-        - INPUT_FIELD_DEFINITION
-        - ENUM_VALUE
-      args:
-        reason:
-          title: reason
-          description: >-
-            Explains why this element was deprecated, usually also including a
-            suggestion for how to access supported similar data. Formatted using
-            the Markdown syntax, as specified by
-            [CommonMark](https://commonmark.org/).
-          required: false
-          schema:
-            $ref: '#/components/scalars/String'
-          default: No longer supported
-      repeatable: false
-    specifiedBy:
-      title: specifiedBy
-      description: Exposes a URL that specifies the behavior of this scalar.
-      locations:
-        - SCALAR
-      args:
-        url:
-          title: url
-          description: The URL that specifies the behavior of this scalar.
-          required: true
-          schema:
-            $ref: '#/components/scalars/String'
+        type: object
+        required:
+          - if
+        properties:
+          if:
+            type: boolean
+            description: Skipped when true.
       repeatable: false
 ```
 

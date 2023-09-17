@@ -163,7 +163,7 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
     }
     
     properties[name] = {
-      ...transformNamedType(field),
+      ...transformBaseType(field),
       ...transformType2Ref(field.type, options, true),
       // ...field.extensions ? { extends: field.extensions } : {},
       ...field.args.length ? { args: transformArgs(field.args, options) } : {}
@@ -188,7 +188,7 @@ const transfromUnionType = (unionType: GraphQLUnionType, options: BuildOptions):
 }
 
 const transformEnumType = (enumType: GraphQLEnumType, options: BuildOptions): GraphApiEnum => {
-  const simpleEnum =  !enumType.getValues().find((item) => item.astNode?.directives?.length || item.description)
+  const simpleEnum = !options.disableStringEnums && !enumType.getValues().find((item) => item.astNode?.directives?.length || item.description)
 
   return {
     ...transformNamedType(enumType),
@@ -284,7 +284,9 @@ const transformArgs = (args: ReadonlyArray<GraphQLArgument>, options: BuildOptio
 }
 
 const directiveSchemaReducer = (options: BuildOptions) => (result: Record<string, GraphApiDirectiveDefinition>, directive: GraphQLDirective) => {
-  result[directive.name] = transformDirectiveSchema(directive, options)
+  if (!['specifiedBy', 'deprecated'].includes(directive.name)) {
+    result[directive.name] = transformDirectiveSchema(directive, options)
+  }
   return result
 }
 
@@ -299,6 +301,9 @@ const transformDirectiveSchema = (directive: GraphQLDirective, options: BuildOpt
 }
 
 export interface BuildOptions {
+  // false - { enum: ['RED', 'BLUE'] }
+  // true  - { values: [ { value: "RED" }, { value: "BLUE" }] }
+  disableStringEnums?: boolean
 }
 
 export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {}): GraphApiSchema => {
