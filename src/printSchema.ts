@@ -1,10 +1,11 @@
-import { Maybe, isPrintableAsBlockString, printBlockString, printString, mapRecord } from "./utils"
+import { Maybe, isPrintableAsBlockString, printBlockString, printString } from "./utils"
 
 import { 
-  GraphApiInterface, GraphApiList, GraphApiObject, GraphApiOperation, GraphApiScalar, GraphApiSchema, 
-  GraphApiBaseType, GraphApiComponents, GraphApiComponentsKind, GraphApiDirective, GraphApiUnion,
-  GraphApiDirectiveDefinition, GraphApiEnum, GraphApiInputObject, GraphApiInputValue, 
+  GraphApiInterface, GraphApiList, GraphApiObject, GraphApiScalar, GraphApiSchema, 
+  GraphApiComponents, GraphApiComponentsKind, GraphApiUnion,
+  GraphApiDirectiveDefinition, GraphApiEnum, GraphApiInputObject, 
 } from "./graphapi"
+import { GraphApiDirective, GraphEnumValue, GraphSchema } from "./graphSchema"
 
 const DEFAULT_DEPRECATION_REASON = 'No longer supported'
 const buildinDirectives = ["specifiedBy", "deprecated", "skip", "include"]
@@ -46,10 +47,9 @@ function printSchemaDefinition(schema: GraphApiSchema): Maybe<string> {
 
 export type TypePrinter<T = any> = (name: string, type: T) => string
 
-export function printOperations(name: string, operations?: Record<string, GraphApiOperation>): string {
+export function printOperations(name: string, operations?: Record<string, GraphSchema>): string {
   if (!operations) { return "" }
-  const properties = mapRecord(operations, ({ response, ...rest }) => ({ ...rest, ...response }))
-  return printObject(name, { title: name, type: "object", properties, required: Object.keys(operations) })
+  return printObject(name, { title: name, type: "object", properties: operations, required: Object.keys(operations) })
 }
 
 export function typePrinter(componentKind: GraphApiComponentsKind): Maybe<TypePrinter> {
@@ -122,19 +122,17 @@ function printUnion(name: string, type: GraphApiUnion): string {
   return printDescription(type.description) + 'union ' + name + possibleTypes
 }
 
-function typeName(type: GraphApiBaseType) {
+function typeName(type: GraphSchema) {
   return type.$ref ? type.$ref.split("/").pop() : type.title
 }
 
-function enumItem(type: GraphApiBaseType) {
-  return type.enum ? type.enum[0] : type.const
-}
-
 function printEnum(name: string, type: GraphApiEnum): string {
-  const values = type.oneOf.map((value, i) =>
+  const enumValues: GraphEnumValue[] = type.enum ? type.enum.map((value) => ({ value })) : type.values || []
+
+  const values = enumValues.map((value, i) =>
     printDescription(value.description, '  ', !i) +
     '  ' +
-    enumItem(value) +
+    value.value +
     printDirectives(value.directives)
   )
 
@@ -142,8 +140,8 @@ function printEnum(name: string, type: GraphApiEnum): string {
 }
 
 function printInputObject(name: string, type: GraphApiInputObject): string {
-  const fieldList = Object.entries(type.inputFields || {})
-  const fields = fieldList.map(([name, field], i) => printDescription(field.description, '  ', !i) + '  ' + printInputValue(name, field))
+  const fieldList = Object.entries(type.properties || {})
+  const fields = fieldList.map(([name, field], i) => printDescription(field.description, '  ', !i) + '  ' + printInputValue(name, field, type.required?.includes(name)))
   return printDescription(type.description) + `input ${name}` + printBlock(fields)
 }
 
@@ -166,16 +164,16 @@ function printBlock(items: ReadonlyArray<string>): string {
   return items.length !== 0 ? ' {\n' + items.join('\n') + '\n}' : ''
 }
 
-function printArgs(args?: Record<string, GraphApiInputValue>, indentation = ''): string {
+function printArgs(args?: GraphSchema, indentation = ''): string {
   if (!args) { return "" }
   
-  const argList = Object.entries(args)
+  const argList = Object.entries(args.properties ?? {})
 
   if (argList.length === 0) { return '' }
 
   // If every arg does not have a description, print them on one line.
   if (argList.every(([,arg]) => !arg.description)) {
-    return '(' + argList.map(([name, arg]) => printInputValue(name, arg)).join(', ') + ')'
+    return '(' + argList.map(([name, arg]) => printInputValue(name, arg, args.required?.includes(name))).join(', ') + ')'
   }
 
   return (
@@ -183,12 +181,12 @@ function printArgs(args?: Record<string, GraphApiInputValue>, indentation = ''):
       printDescription(arg.description, '  ' + indentation, !i) +
       '  ' +
       indentation +
-      printInputValue(name, arg),
+      printInputValue(name, arg, args.required?.includes(name)),
     ).join('\n') + '\n' + indentation + ')'
   )
 }
 
-function printTypeRef (schema?: GraphApiBaseType, nullable = false): string {
+function printTypeRef (schema?: GraphSchema, nullable = false): string {
   if (!schema) { return "" }
   const { $ref, oneOf, type } = schema
   const arrType = Array.isArray(type) ? type : [type]
@@ -231,9 +229,8 @@ function printDirectives(directives?: Record<string, GraphApiDirective>): string
   return result
 }
 
-
-function printInputValue(name: string, arg: GraphApiInputValue): string {
-  const type = printTypeRef(arg.schema, !arg.required)
+function printInputValue(name: string, arg: GraphSchema, required = false): string {
+  const type = printTypeRef(arg, !required)
   return (
     name + ': ' + type + 
     (arg.default !== undefined ? ` = ${String(arg.default)}` : "") + 

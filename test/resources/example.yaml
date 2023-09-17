@@ -1,59 +1,51 @@
-graphapi: 0.0.3
+graphapi: 0.1.0
 queries:
   todo:
     title: todo
     description: A Query with 1 required argument and 1 optional argument
     args:
-      id:
-        title: id
-        required: true
-        schema:
+      type: object
+      required:
+        - id
+      properties:
+        id:
           $ref: '#/components/scalars/ID'
-      isCompleted:
-        title: isCompleted
-        description: A default value of false
-        required: false
-        schema:
+        isCompleted:
           $ref: '#/components/scalars/Boolean'
-        default: false
-    response:
-      $ref: '#/components/objects/Todo'
-      type:
-        - object
-        - 'null'
+          description: A default value of false
+          default: false
+    $ref: '#/components/objects/Todo'
+    nullable: true
   todos:
     title: todos
     description: Returns a list (or null) that can contain null values
     args:
-      ids:
-        title: ids
-        description: Required argument that is a list that cannot contain null values
-        required: true
-        schema:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
           type: array
           items:
             $ref: '#/components/scalars/String'
-    response:
-      type:
-        - array
-        - 'null'
-      items:
-        $ref: '#/components/objects/Todo'
-        type:
-          - object
-          - 'null'
+          description: Required argument that is a list that cannot contain null values
+    type: array
+    items:
+      $ref: '#/components/objects/Todo'
+      nullable: true
+    nullable: true
 mutations:
   create_todo:
     title: create_todo
     description: A Mutation with 1 required argument
     args:
-      todo:
-        title: todo
-        required: true
-        schema:
+      type: object
+      required:
+        - todo
+      properties:
+        todo:
           $ref: '#/components/inputObjects/TodoInputType'
-    response:
-      $ref: '#/components/objects/Todo'
+    $ref: '#/components/objects/Todo'
 components:
   objects:
     Todo:
@@ -73,15 +65,9 @@ components:
         completed:
           title: completed
           $ref: '#/components/scalars/Boolean'
-          type:
-            - boolean
-            - 'null'
         color:
           title: color
           $ref: '#/components/enums/Color'
-          type:
-            - string
-            - 'null'
         colors:
           title: colors
           description: A field that requires an argument
@@ -89,10 +75,11 @@ components:
           items:
             $ref: '#/components/enums/Color'
           args:
-            filter:
-              title: filter
-              required: true
-              schema:
+            type: object
+            required:
+              - filter
+            properties:
+              filter:
                 type: array
                 items:
                   $ref: '#/components/enums/Color'
@@ -121,32 +108,32 @@ components:
     Color:
       title: Color
       type: string
-      oneOf:
-        - description: Red color
-          enum:
-            - RED
-        - description: Green color
-          enum:
-            - GREEN
+      values:
+        - value: RED
+          description: Red color
+        - value: GREEN
+          description: Green color
   inputObjects:
     TodoInputType:
       title: TodoInputType
-      inputFields:
+      type: object
+      required:
+        - name
+      properties:
         name:
           title: name
-          required: true
-          schema:
-            $ref: '#/components/scalars/String'
+          $ref: '#/components/scalars/String'
         completed:
           title: completed
-          required: false
-          schema:
-            $ref: '#/components/scalars/Boolean'
+          directives:
+            deprecated:
+              $ref: '#/components/directives/deprecated'
+              meta:
+                reason: not used
+          $ref: '#/components/scalars/Boolean'
         color:
           title: color
-          required: false
-          schema:
-            $ref: '#/components/enums/Color'
+          $ref: '#/components/enums/Color'
           default: RED
   directives:
     include:
@@ -159,12 +146,13 @@ components:
         - FRAGMENT_SPREAD
         - INLINE_FRAGMENT
       args:
-        if:
-          title: if
-          description: Included when true.
-          required: true
-          schema:
+        type: object
+        required:
+          - if
+        properties:
+          if:
             $ref: '#/components/scalars/Boolean'
+            description: Included when true.
       repeatable: false
     skip:
       title: skip
@@ -176,12 +164,13 @@ components:
         - FRAGMENT_SPREAD
         - INLINE_FRAGMENT
       args:
-        if:
-          title: if
-          description: Skipped when true.
-          required: true
-          schema:
+        type: object
+        required:
+          - if
+        properties:
+          if:
             $ref: '#/components/scalars/Boolean'
+            description: Skipped when true.
       repeatable: false
     deprecated:
       title: deprecated
@@ -192,17 +181,16 @@ components:
         - INPUT_FIELD_DEFINITION
         - ENUM_VALUE
       args:
-        reason:
-          title: reason
-          description: >-
-            Explains why this element was deprecated, usually also including a
-            suggestion for how to access supported similar data. Formatted using
-            the Markdown syntax, as specified by
-            [CommonMark](https://commonmark.org/).
-          required: false
-          schema:
+        type: object
+        properties:
+          reason:
             $ref: '#/components/scalars/String'
-          default: No longer supported
+            description: >-
+              Explains why this element was deprecated, usually also including a
+              suggestion for how to access supported similar data. Formatted
+              using the Markdown syntax, as specified by
+              [CommonMark](https://commonmark.org/).
+            default: No longer supported
       repeatable: false
     specifiedBy:
       title: specifiedBy
@@ -210,10 +198,11 @@ components:
       locations:
         - SCALAR
       args:
-        url:
-          title: url
-          description: The URL that specifies the behavior of this scalar.
-          required: true
-          schema:
+        type: object
+        required:
+          - url
+        properties:
+          url:
             $ref: '#/components/scalars/String'
+            description: The URL that specifies the behavior of this scalar.
       repeatable: false

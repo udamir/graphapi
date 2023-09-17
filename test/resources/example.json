@@ -145,7 +145,8 @@
               "kind": "SCALAR",
               "name": "Boolean"
             },
-            "isDeprecated": false
+            "isDeprecated": true,
+            "deprecationReason": "not used"
           },
           {
             "name": "color",

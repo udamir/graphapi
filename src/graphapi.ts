@@ -1,4 +1,4 @@
-import type { JSONSchema4 } from "json-schema"
+import { GraphApiDirective, GraphEnumValue, GraphSchema } from "./graphSchema"
 
 export type DirectiveLocation = 
   'QUERY' | 'MUTATION' | 'SUBSCRIPTION' | 'FIELD' | 
@@ -7,23 +7,19 @@ export type DirectiveLocation =
   'FIELD_DEFINITION' | 'ARGUMENT_DEFINITION' | 'INTERFACE' |
   'UNION' | 'ENUM' | 'ENUM_VALUE' | 'INPUT_OBJECT' | 'INPUT_FIELD_DEFINITION'
 
-// GraphApi types
-export type GraphApiTypes = GraphApiObject | GraphApiScalar | GraphApiInterface |
-  GraphApiUnion | GraphApiEnum | GraphApiInputObject | GraphApiList
-
 export type GraphApiScalarType = "string" | "number" | "boolean"
 
 export interface GraphApiSchema {
   // graphapi version 
-  graphapi: "0.0.3"
+  graphapi: "0.1.0"
 
   // schema description
   description?: string
 
   // operations
-  queries?: Record<string, GraphApiOperation>
-  mutations?: Record<string, GraphApiOperation>
-  subscriptions?: Record<string, GraphApiOperation>
+  queries?: Record<string, GraphSchema>
+  mutations?: Record<string, GraphSchema>
+  subscriptions?: Record<string, GraphSchema>
 
   components?: GraphApiComponents
 }
@@ -43,65 +39,14 @@ export interface GraphApiComponents {
 
 export type GraphApiComponentsKind = keyof GraphApiComponents
 
-export interface GraphApiOperation {
-  // name
-  title?: string
-
-  // description
-  description?: string
-
-  // operation arguments
-  args?: Record<string, GraphApiInputValue>
-
-  // operation response
-  response: GraphApiBaseType
-
-  // Custom field: type derictives
-  directives?: Record<string, GraphApiDirective>
-}
-
-export interface GraphApiDirective {
-  // Ref to directive schema
-  $ref: string
-
-  // directive metadata
-  meta?: Record<string, any>  
-}
-
-// Base Type
-export interface GraphApiBaseType extends JSONSchema4 {
-  // description
-  description?: string
-
-  // boolean not supported
-  required?: string[]
-
-  oneOf?: GraphApiBaseType[]
-  allOf?: GraphApiBaseType[]
-  anyOf?: GraphApiBaseType[]
-  not?: GraphApiBaseType[]
-  items?: GraphApiBaseType
-  properties?: Record<string, GraphApiBaseType>
-  nullable?: boolean
-
-  // Custom field: type derictives
-  "directives"?: Record<string, GraphApiDirective>
-}
-
-// Named Type
-export interface GraphApiNamedType extends GraphApiBaseType {
-  // name
-  title: string
-}
-
 // SCALAR
-export interface GraphApiScalar extends GraphApiNamedType {
+export interface GraphApiScalar extends GraphSchema {
   // kind = "SCALAR"
   type: GraphApiScalarType
 }
 
 // OBJECT
-export interface GraphApiObject extends GraphApiNamedType {
+export interface GraphApiObject extends GraphSchema {
   // kind = "OBJECT"
   type: "object"
 
@@ -109,7 +54,7 @@ export interface GraphApiObject extends GraphApiNamedType {
   required?: string[]
 
   // fields
-  properties?: Record<string, GraphApiField>
+  properties?: Record<string, GraphSchema>
 
   // interfaces
   "interfaces"?: { $ref: string }[]
@@ -121,27 +66,23 @@ export interface GraphApiInterface extends GraphApiObject {
 }
 
 // UNION
-export interface GraphApiUnion extends GraphApiNamedType {
+export interface GraphApiUnion extends GraphSchema {
   // kind = "UNION"
   type: "object"
   
   // one of objects
-  oneOf: GraphApiBaseType[] 
-}
-
-// ENUM
-export interface GraphApiEnum extends GraphApiNamedType {
-  // kind = "ENUM"
-  type: "string"
-
-  // enumValues
-  oneOf: GraphApiBaseType[]
+  oneOf: GraphSchema[] 
 }
 
 // INPUT_OBJECT
-export interface GraphApiInputObject {
+export interface GraphApiInputObject extends GraphSchema {
   // kind = "INPUT_OBJECT"
+  type: "object"
+
   title: string
+
+  // required
+  required?: string[]
   
   // description
   description?: string
@@ -150,41 +91,36 @@ export interface GraphApiInputObject {
   directives?: Record<string, GraphApiDirective>
 
   // nputFields
-  inputFields: Record<string, GraphApiInputValue>
+  properties: Record<string, GraphSchema>
+}
+
+// ENUM
+export interface GraphApiEnum extends GraphSchema {
+  // simple enum
+  enum?: string[]
+
+  // enum with description and directives
+  "values"?: GraphEnumValue[]
 }
 
 // LIST
-export interface GraphApiList extends GraphApiNamedType {
+export interface GraphApiList extends GraphSchema {
   // kind = "LIST"
   type: "array"
 
   // ofType
-  items?: GraphApiTypes
+  items?: GraphSchema
 }
 
-export interface GraphApiField extends GraphApiBaseType {
-  // Custom field: args
-  "args"?: Record<string, GraphApiInputValue>
-}
-
-export interface GraphApiInputValue {
-  // name
-  title?: string
-
-  // description
-  description?: string
+// LIST
+export interface GraphApiArgs extends GraphSchema {
+  type: "object"
 
   // non-null
-  required?: boolean
+  required?: string[]
 
-  // type
-  schema?: GraphApiBaseType
-
-  // defaultValue
-  default?: any
-  
-  // arg derictives
-  directives?: Record<string, any>
+  // fields
+  properties?: Record<string, GraphSchema>
 }
 
 export interface GraphApiDirectiveDefinition {
@@ -198,7 +134,7 @@ export interface GraphApiDirectiveDefinition {
   locations: DirectiveLocation[]
 
   // args[]
-  args?: Record<string, GraphApiInputValue>
+  args?: GraphApiArgs
 
   // isRepeatable
   repeatable: boolean

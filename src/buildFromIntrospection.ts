@@ -2,17 +2,18 @@ import type {
   IntrospectionInterfaceType, IntrospectionType, IntrospectionQuery, IntrospectionScalarType, 
   IntrospectionDirective, IntrospectionEnumType, IntrospectionEnumValue, IntrospectionField,
   IntrospectionObjectType, IntrospectionInputObjectType, IntrospectionInputValue, 
-  IntrospectionTypeRef, IntrospectionUnionType, IntrospectionNamedTypeRef
+  IntrospectionTypeRef, IntrospectionUnionType
 } from "graphql"
 
 import type { 
-  GraphApiSchema, GraphApiInputValue, GraphApiNamedType, GraphApiEnum,
-  GraphApiDirectiveDefinition, GraphApiScalar, GraphApiField, GraphApiUnion,
-  GraphApiObject, GraphApiInputObject, GraphApiOperation, GraphApiBaseType
+  GraphApiSchema, GraphApiEnum,
+  GraphApiDirectiveDefinition, GraphApiScalar, GraphApiUnion,
+  GraphApiObject, GraphApiInputObject, GraphApiArgs
 } from "./graphapi"
 
 import { BuildOptions } from "./buildFromSchema"
 import { getScalarType } from "./getScalarType"
+import { GraphSchema } from "./graphSchema";
 
 const DEFAULT_DEPRECATION_REASON = 'No longer supported';
 
@@ -28,65 +29,48 @@ const components = {
 
 type ComponentsKind = keyof typeof components
 
-const getType = (gqlType: IntrospectionNamedTypeRef) => {
-  switch (gqlType.kind) {
-    case "SCALAR":
-      return getScalarType(gqlType as IntrospectionScalarType)
-    case "OBJECT":
-    case "INTERFACE":
-    case "INPUT_OBJECT":
-    case "UNION":
-      return "object"
-    case "ENUM": 
-      return "string"
-    default:
-      throw new Error("Unknown type")
-  }
-}
-
 const componentRef = (kind: ComponentsKind, name: string): string => {
   return `#/components/${components[kind]}/${name}`
 }
 
-const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions, nonNullable = false): GraphApiBaseType => {
+const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions, nonNullable = false): GraphSchema => {
   if (gqlType.kind === "NON_NULL") {
     return transformType2Ref(gqlType.ofType, options, true)
   } else if (gqlType.kind === "LIST") {
-    const result: GraphApiBaseType = { 
-      type: (nonNullable || !options?.nullableArrayType) ? "array" : ["array", "null"],
+    const result: GraphSchema = { 
+      type: "array",
       items: transformType2Ref(gqlType.ofType, options),
-      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
+      ...(nonNullable) ? {} : { nullable: true }
     }
     return result
   } else {
-    const $ref: GraphApiBaseType = { 
+    const $ref: GraphSchema = { 
       $ref: componentRef(gqlType.kind, gqlType.name),
-      ...(!nonNullable && options?.nullableArrayType) ? { type: [ getType(gqlType), "null"] } : {},
-      ...(nonNullable || options?.nullableArrayType) ? {} : { nullable: true }
+      ...(nonNullable) ? {} : { nullable: true }
     }
     return $ref
   }
 }
 
-const transfromField = (field: IntrospectionField, options: BuildOptions): GraphApiField => {
+const transfromField = (field: IntrospectionField, options: BuildOptions): GraphSchema => {
   return {
     ...transformNamedType(field),
-    ...field.args.length ? { args: field.args.reduce(inputValueReducer(options), {}) } : {},
+    ...field.args.length ? { args: transformArgs(field.args, options) } : {},
   }
 }
 
-const transformOperations = (fields: readonly IntrospectionField[], options: BuildOptions): Record<string, GraphApiOperation> => {
-  const operations: Record<string, GraphApiOperation> = {} 
+const transformOperations = (fields: readonly IntrospectionField[], options: BuildOptions): Record<string, GraphSchema> => {
+  const operations: Record<string, GraphSchema> = {} 
   for (const field of fields) {
     operations[field.name] = {
       ...transfromField(field, options),
-      response: transformType2Ref(field.type, options)
+      ...transformType2Ref(field.type, options)
     }
   }
   return operations
 }
 
-const transformBaseType = (baseType: IntrospectionType | IntrospectionEnumValue | IntrospectionField | IntrospectionInputValue): GraphApiBaseType => {
+const transformBaseType = (baseType: IntrospectionType | IntrospectionEnumValue | IntrospectionField | IntrospectionInputValue): GraphSchema => {
   const isDeprecated = "isDeprecated" in baseType ? baseType.isDeprecated : false
   const reason = "deprecationReason" in baseType ? baseType.deprecationReason : false
   return {
@@ -95,14 +79,14 @@ const transformBaseType = (baseType: IntrospectionType | IntrospectionEnumValue 
       directives: {
         deprecated: {
           $ref: componentRef("DERICTIVE", "deprecated"),
-          meta: reason !== DEFAULT_DEPRECATION_REASON ? { reason } : {}
+          ...reason && reason !== DEFAULT_DEPRECATION_REASON ? { meta: { reason } } : {}
         }
       }
     } : {}
   }
 }
 
-const transformNamedType = (baseType: IntrospectionType | IntrospectionField | IntrospectionInputValue): GraphApiNamedType => {
+const transformNamedType = (baseType: IntrospectionType | IntrospectionField | IntrospectionInputValue): GraphSchema => {
   return {
     title: baseType.name,
     ...transformBaseType(baseType)
@@ -118,7 +102,7 @@ const transformScalarType = (scalarType: IntrospectionScalarType, options: Build
 }
 
 const transformObjectType = (objectType: IntrospectionObjectType | IntrospectionInterfaceType, options: BuildOptions): GraphApiObject => {
-  const properties: Record<string, GraphApiField> = {}
+  const properties: Record<string, GraphSchema> = {}
   const required: string[] = []
   const interfaces = objectType.interfaces.map(({ kind, name }) => ({ $ref: componentRef(kind, name)}))
 
@@ -129,8 +113,8 @@ const transformObjectType = (objectType: IntrospectionObjectType | Introspection
     
     properties[field.name] = {
       ...transformNamedType(field),
-      ...transformType2Ref(field.type, options),
-      ...field.args.length ? { args: field.args.reduce(inputValueReducer(options), {}) } : {}
+      ...transformType2Ref(field.type, options, true),
+      ...field.args.length ? { args: transformArgs(field.args, options) } : {}
     }
   }
 
@@ -152,48 +136,44 @@ const transfromUnionType = (unionType: IntrospectionUnionType, options: BuildOpt
 }
 
 const transformEnumType = (enumType: IntrospectionEnumType, options: BuildOptions): GraphApiEnum => {
+  const simpleEnum = !enumType.enumValues.find((item) => item.isDeprecated || item.description)
+
   return {
     ...transformNamedType(enumType),
     type: "string",
-    oneOf: enumType.enumValues.map((item) => ({
-      ...transformBaseType(item),
-      ...options?.enumItemsAsConst 
-        ? { const: item.name }   // JsonSchema6
-        : { enum: [item.name] }  // JsonSchema4
-    }))
+    ...simpleEnum ? {
+      enum: enumType.enumValues.map((item) => item.name)
+    } : {
+      values: enumType.enumValues.map((item) => ({
+        ...transformBaseType(item),
+        value: item.name, 
+      }))
+    }
   }
 }
 
 const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType, options: BuildOptions): GraphApiInputObject => {
-  const inputFields: Record<string, GraphApiInputValue> = {}
+  const properties: Record<string, GraphSchema> = {}
+  const required: string[] = []
   const fields = inputObjectType.inputFields
 
   for (const field of fields) {
-    inputFields[field.name] = {
+    if (field.type.kind === "NON_NULL") {
+      required.push(field.name)
+    }
+    properties[field.name] = {
       ...transformNamedType(field),
-      required: field.type.kind === "NON_NULL",
-      schema: transformType2Ref(field.type, options, true),
+      ...transformType2Ref(field.type, options, true),
       ...field.defaultValue !== undefined ? { default: field.defaultValue } : {} // TODO: parse JSON ?
     }
   }
 
   return {
     ...transformNamedType(inputObjectType),
-    inputFields
-  }
-}
-
-const inputValueReducer = (options: BuildOptions) => (result: Record<string, GraphApiInputValue>, arg: IntrospectionInputValue) => {
-  result[arg.name] = transformInputValue(arg, options)
-  return result
-}
-
-const transformInputValue = (arg: IntrospectionInputValue, options: BuildOptions): GraphApiInputValue => {
-  return {
-    ...transformNamedType(arg),
-    required: arg.type.kind === "NON_NULL",
-    schema: transformType2Ref(arg.type, options, true),
-    ...arg.defaultValue !== null ? { default: arg.defaultValue } : {},
+    type: "object",
+    title: inputObjectType.name,
+    ...required.length ? { required } : {},
+    properties
   }
 }
 
@@ -202,12 +182,34 @@ const directiveSchemaReducer = (options: BuildOptions) => (result: Record<string
   return result
 }
 
+const transformArgs = (inputValues: ReadonlyArray<IntrospectionInputValue>, options: BuildOptions): GraphApiArgs => {
+  const properties: Record<string, GraphSchema> = {}
+  const required: string[] = []
+
+  for (const arg of inputValues) {
+    if (arg.type.kind === "NON_NULL") {
+      required.push(arg.name)
+    }
+    properties[arg.name] = {
+      ...transformType2Ref(arg.type, options, true),
+      ...transformBaseType(arg),
+      ...arg.defaultValue !== null ? { default: arg.defaultValue } : {} // TODO: parse JSON ?
+    }
+  }
+
+  return {
+    type: "object",
+    ...required.length ? { required } : {},
+    properties
+  }
+}
+
 const transformDirectiveSchema = (directive: IntrospectionDirective, options: BuildOptions): GraphApiDirectiveDefinition => {
   return {
     title: directive.name,
     ...directive.description ? { description: directive.description } : {},
     locations: [ ...directive.locations ],
-    ...directive.args.length ? { args: directive.args.reduce(inputValueReducer(options), {}) } : {},
+    ...directive.args.length ? { args: transformArgs(directive.args, options) } : {},
     repeatable: !!directive.isRepeatable
   }
 }
@@ -271,7 +273,7 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
   }
 
   return types.reduce(typeReducer, {
-    graphapi: "0.0.3",
+    graphapi: "0.1.0",
     ...description ? { description } : {},
     components: {
       ...directives.length ? { directives: directives.reduce(directiveSchemaReducer(options), {}) } : {}

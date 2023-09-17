@@ -18,7 +18,7 @@ enum Color {
 
 input TodoInputType {
   name: String!
-  completed: Boolean
+  completed: Boolean @deprecated(reason: "not used")
   color: Color = RED
 }
 
