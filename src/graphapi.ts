@@ -7,7 +7,7 @@ export type DirectiveLocation =
   'FIELD_DEFINITION' | 'ARGUMENT_DEFINITION' | 'INTERFACE' |
   'UNION' | 'ENUM' | 'ENUM_VALUE' | 'INPUT_OBJECT' | 'INPUT_FIELD_DEFINITION'
 
-export type GraphApiScalarType = "string" | "number" | "boolean"
+export type GraphApiScalarType = "string" | "number" | "integer" | "boolean"
 
 export interface GraphApiSchema {
   // graphapi version 

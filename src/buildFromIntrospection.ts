@@ -11,8 +11,8 @@ import type {
   GraphApiObject, GraphApiInputObject, GraphApiArgs
 } from "./graphapi"
 
+import { getScalarType, getScalarTypeFormat } from "./getScalarType"
 import { BuildOptions } from "./buildFromSchema"
-import { getScalarType } from "./getScalarType"
 import { GraphSchema } from "./graphSchema";
 
 const DEFAULT_DEPRECATION_REASON = 'No longer supported';
@@ -37,19 +37,24 @@ const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions,
   if (gqlType.kind === "NON_NULL") {
     return transformType2Ref(gqlType.ofType, options, true)
   } else if (gqlType.kind === "LIST") {
-    const result: GraphSchema = { 
+    return { 
       type: "array",
       items: transformType2Ref(gqlType.ofType, options),
       ...(nonNullable) ? {} : { nullable: true }
     }
-    return result
+  } else if (gqlType.kind === "SCALAR") {
+    const format = getScalarTypeFormat(gqlType as IntrospectionScalarType)
+    return { 
+      type: getScalarType(gqlType as IntrospectionScalarType),
+      ...format ? { format } : {}
+    }
   } else {
-    const $ref: GraphSchema = { 
+    return { 
       $ref: componentRef(gqlType.kind, gqlType.name),
       ...(nonNullable) ? {} : { nullable: true }
     }
-    return $ref
   }
+
 }
 
 const transfromField = (field: IntrospectionField, options: BuildOptions): GraphSchema => {
@@ -164,7 +169,7 @@ const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType,
     properties[field.name] = {
       ...transformNamedType(field),
       ...transformType2Ref(field.type, options, true),
-      ...field.defaultValue !== undefined ? { default: field.defaultValue } : {} // TODO: parse JSON ?
+      ...field.defaultValue !== undefined ? { default: field.defaultValue } : {}
     }
   }
 
@@ -193,7 +198,7 @@ const transformArgs = (inputValues: ReadonlyArray<IntrospectionInputValue>, opti
     properties[arg.name] = {
       ...transformType2Ref(arg.type, options, true),
       ...transformBaseType(arg),
-      ...arg.defaultValue !== null ? { default: arg.defaultValue } : {} // TODO: parse JSON ?
+      ...arg.defaultValue !== null ? { default: arg.defaultValue } : {}
     }
   }
 
@@ -249,7 +254,9 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
 
         switch (current.kind) {
           case "SCALAR":
-            result.components!.scalars![current.name] = transformScalarType(current, options)
+            if (!['String', 'Int', 'Float', 'Boolean', 'ID'].includes(current.name)) { 
+              result.components!.scalars![current.name] = transformScalarType(current, options)
+            }
             break;
           case "OBJECT":
             result.components!.objects![current.name] = transformObjectType(current, options)

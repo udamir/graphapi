@@ -9,9 +9,10 @@ queries:
         - id
       properties:
         id:
-          $ref: '#/components/scalars/ID'
+          type: string
+          format: ID
         isCompleted:
-          $ref: '#/components/scalars/Boolean'
+          type: boolean
           description: A default value of false
           default: false
     $ref: '#/components/objects/Todo'
@@ -27,7 +28,7 @@ queries:
         ids:
           type: array
           items:
-            $ref: '#/components/scalars/String'
+            type: string
           description: Required argument that is a list that cannot contain null values
     type: array
     items:
@@ -58,13 +59,14 @@ components:
       properties:
         id:
           title: id
-          $ref: '#/components/scalars/ID'
+          type: string
+          format: ID
         name:
           title: name
-          $ref: '#/components/scalars/String'
+          type: string
         completed:
           title: completed
-          $ref: '#/components/scalars/Boolean'
+          type: boolean
         color:
           title: color
           $ref: '#/components/enums/Color'
@@ -83,27 +85,6 @@ components:
                 type: array
                 items:
                   $ref: '#/components/enums/Color'
-  scalars:
-    ID:
-      title: ID
-      description: >-
-        The `ID` scalar type represents a unique identifier, often used to
-        refetch an object or as key for a cache. The ID type appears in a JSON
-        response as a String; however, it is not intended to be human-readable.
-        When expected as an input type, any string (such as `"4"`) or integer
-        (such as `4`) input value will be accepted as an ID.
-      type: string
-    String:
-      title: String
-      description: >-
-        The `String` scalar type represents textual data, represented as UTF-8
-        character sequences. The String type is most often used by GraphQL to
-        represent free-form human-readable text.
-      type: string
-    Boolean:
-      title: Boolean
-      description: The `Boolean` scalar type represents `true` or `false`.
-      type: boolean
   enums:
     Color:
       title: Color
@@ -122,7 +103,7 @@ components:
       properties:
         name:
           title: name
-          $ref: '#/components/scalars/String'
+          type: string
         completed:
           title: completed
           directives:
@@ -130,7 +111,7 @@ components:
               $ref: '#/components/directives/deprecated'
               meta:
                 reason: not used
-          $ref: '#/components/scalars/Boolean'
+          type: boolean
         color:
           title: color
           $ref: '#/components/enums/Color'
@@ -151,7 +132,7 @@ components:
           - if
         properties:
           if:
-            $ref: '#/components/scalars/Boolean'
+            type: boolean
             description: Included when true.
       repeatable: false
     skip:
@@ -169,7 +150,7 @@ components:
           - if
         properties:
           if:
-            $ref: '#/components/scalars/Boolean'
+            type: boolean
             description: Skipped when true.
       repeatable: false
     deprecated:
@@ -184,7 +165,7 @@ components:
         type: object
         properties:
           reason:
-            $ref: '#/components/scalars/String'
+            type: string
             description: >-
               Explains why this element was deprecated, usually also including a
               suggestion for how to access supported similar data. Formatted
@@ -203,6 +184,6 @@ components:
           - url
         properties:
           url:
-            $ref: '#/components/scalars/String'
+            type: string
             description: The URL that specifies the behavior of this scalar.
       repeatable: false

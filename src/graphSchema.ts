@@ -1,6 +1,6 @@
 import type { JSONSchema6 } from "json-schema"
 
-export type GraphSchemaType = "string" | "number" | "boolean" | "object" | "array" | "null"
+export type GraphSchemaType = "string" | "number" | "integer" | "boolean" | "object" | "array" | "null"
 
 // Graph Schema Type
 export interface GraphSchema extends JSONSchema6 {

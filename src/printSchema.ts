@@ -189,12 +189,22 @@ function printArgs(args?: GraphSchema, indentation = ''): string {
 function printTypeRef (schema?: GraphSchema, nullable = false): string {
   if (!schema) { return "" }
   const { $ref, oneOf, type } = schema
-  const arrType = Array.isArray(type) ? type : [type]
-  const postfix = (nullable || schema.nullable || arrType.includes("null")) ? "" : "!"
+  const postfix = (nullable || schema.nullable) ? "" : "!"
   if ($ref) {
     return $ref.split("/").pop() + postfix
-  } else if (arrType.includes("array")) {
+  } else if (type === "array") {
     return `[${printTypeRef((schema as GraphApiList).items)}]${postfix}` 
+  } else if (type && ['string', 'number', 'integer', 'boolean'].includes(type)) {
+    if (schema.format) {
+      return schema.format + postfix
+    } else {
+      switch (type) {
+        case 'string': return 'String' + postfix
+        case 'number': return 'Float' + postfix
+        case 'integer': return 'Int' + postfix
+        case 'boolean': return 'Boolean' + postfix
+      }
+    }
   } else if (oneOf && oneOf.length === 2) {
     const nullIndex = oneOf.findIndex((item) => item.type === "null")
     if (nullIndex < 0) {

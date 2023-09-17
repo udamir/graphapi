@@ -11,7 +11,7 @@ import type {
   GraphApiObject, GraphApiInputObject
 } from "./graphapi"
 
-import { getScalarType } from "./getScalarType"
+import { getScalarType, getScalarTypeFormat } from "./getScalarType"
 import { GraphApiDirective, GraphSchema } from "./graphSchema"
 
 const components = {
@@ -59,18 +59,22 @@ const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, 
   if (isNonNullType(gqlType)) {
     return transformType2Ref(gqlType.ofType, options, true)
   } else if (isListType(gqlType)) {
-    const result: GraphSchema = { 
+    return { 
       type:  "array",
       items: transformType2Ref(gqlType.ofType, options),
       ...(nonNullable) ? {} : { nullable: true }
     }
-    return  result
+  } else if (isScalarType(gqlType)) {
+    const format = getScalarTypeFormat(gqlType)
+    return { 
+      type: getScalarType(gqlType),
+      ...format ? { format } : {}
+    }
   } else {
-    const $ref: GraphSchema = { 
+    return { 
       $ref: componentRef(getTypeKind(gqlType), gqlType.name),
       ...(nonNullable) ? {} : { nullable: true }
     }
-    return $ref
   }
 }
 
@@ -210,7 +214,7 @@ const transformInputObjectType = (inputObjectType: GraphQLInputObjectType, optio
     properties[name] = {
       ...transformNamedType(field),
       ...transformType2Ref(field.type, options, true),
-      ...field.defaultValue !== undefined ? { default: field.defaultValue } : {} // TODO: parse JSON ?
+      ...field.defaultValue !== undefined ? { default: field.defaultValue } : {}
     }
   }
 
@@ -246,6 +250,7 @@ const transformType = (gqlType: GraphQLNamedType, options: BuildOptions): GraphS
 const transformTypes = (gqlTypeMap: Record<string, GraphQLNamedType>, options: BuildOptions, skip: string[] = []): Record<string, Record<string, GraphSchema>> => {
   const result: Record<string, Record<string, GraphSchema>> = {}
   for (const [name, gqlType] of Object.entries(gqlTypeMap)) {
+    if (['String', 'Int', 'Float', 'Boolean', 'ID'].includes(name)) { continue }
     if (name.startsWith("__") || skip.includes(name)) { continue }
     const kind = getTypeKind(gqlType)
     result[components[kind]] = result[components[kind]] || {}
@@ -267,7 +272,7 @@ const transformArgs = (args: ReadonlyArray<GraphQLArgument>, options: BuildOptio
       ...transformType2Ref(arg.type, options, true),
       ...transformBaseType(arg),
       // ...field.extensions ? { extends: field.extensions } : {},
-      ...arg.defaultValue !== undefined ? { default: arg.defaultValue } : {} // TODO: parse JSON ?
+      ...arg.defaultValue !== undefined ? { default: arg.defaultValue } : {}
     }
   }
 
