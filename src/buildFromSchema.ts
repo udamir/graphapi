@@ -68,7 +68,8 @@ const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, 
     const format = getScalarTypeFormat(gqlType)
     return { 
       type: getScalarType(gqlType),
-      ...format ? { format } : {}
+      ...format ? { format } : {},
+      ...(nonNullable) ? {} : { nullable: true }
     }
   } else {
     return { 

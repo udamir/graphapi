@@ -1,6 +1,6 @@
 {
   "name": "gqlapi",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "The GraphAPI Specification Repository",
   "module": "dist/esm/index.js",
   "main": "dist/cjs/index.js",

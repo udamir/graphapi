@@ -11,6 +11,27 @@ const loadFile = (filename: string): string => {
 }
 
 describe("Build GraphApi", () => {
+
+  it("should be nullable query for Scalar result", () => {
+    const raw = `
+    type Query {
+      "A Query with 1 required argument and 1 optional argument"
+      todo(
+        id: ID!
+    
+        "A default value of false"
+        isCompleted: Boolean = false
+      ): String
+    }
+    `
+    const graphapi = buildFromSchema(buildSchema(raw, { noLocation: true }))
+
+    expect(graphapi.queries!.todo).toMatchObject({
+      type: 'string',
+      nullable: true
+    })
+  })
+
   it("should build graphapi from graphql schema", async () => {
 
     const source = loadFile("example.graphql")

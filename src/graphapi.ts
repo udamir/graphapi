@@ -43,6 +43,16 @@ export type GraphApiComponentsKind = keyof GraphApiComponents
 export interface GraphApiScalar extends GraphSchema {
   // kind = "SCALAR"
   type: GraphApiScalarType
+
+  // format for custom scalars 
+  format?: any
+
+  // default for input values
+  default?: any
+
+  // enum values
+  enum?: any
+  values?: GraphEnumValue[]
 }
 
 // OBJECT

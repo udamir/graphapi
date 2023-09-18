@@ -46,7 +46,8 @@ const transformType2Ref = (gqlType: IntrospectionTypeRef, options: BuildOptions,
     const format = getScalarTypeFormat(gqlType as IntrospectionScalarType)
     return { 
       type: getScalarType(gqlType as IntrospectionScalarType),
-      ...format ? { format } : {}
+      ...format ? { format } : {},
+      ...(nonNullable) ? {} : { nullable: true }
     }
   } else {
     return { 
