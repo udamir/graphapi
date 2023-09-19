@@ -183,7 +183,6 @@ const transformObjectType = (objectType: GraphQLObjectType | GraphQLInterfaceTyp
 const transfromUnionType = (unionType: GraphQLUnionType, options: BuildOptions): GraphApiUnion => {
   return { 
     ...transformNamedType(unionType),
-    type: "object",
     oneOf: unionType.getTypes().map((item) => transformType2Ref(item, options, true))
   }
 }

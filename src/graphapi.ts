@@ -73,9 +73,6 @@ export interface GraphApiInterface extends GraphApiObject {
 
 // UNION
 export interface GraphApiUnion extends GraphSchema {
-  // kind = "UNION"
-  type: "object"
-  
   // one of objects
   oneOf: GraphSchema[] 
 }

@@ -136,7 +136,6 @@ const transformObjectType = (objectType: IntrospectionObjectType | Introspection
 const transfromUnionType = (unionType: IntrospectionUnionType, options: BuildOptions): GraphApiUnion => {
   return { 
     ...transformNamedType(unionType),
-    type: "object",
     oneOf: unionType.possibleTypes.map((item) => transformType2Ref(item, options, true))
   }
 }
