@@ -127,14 +127,13 @@ function typeName(type: GraphSchema) {
 }
 
 function printEnum(name: string, type: GraphApiEnum): string {
-  const enumValues: GraphEnumValue[] = type.enum ? type.enum.map((value) => ({ value })) : type.values || []
-
-  const values = enumValues.map((value, i) =>
-    printDescription(value.description, '  ', !i) +
-    '  ' +
-    value.value +
-    printDirectives(value.directives)
-  )
+  const values = type.enum!.map((name, i) => {
+    const value = type.values?.[name] ?? {}
+    return printDescription(value.description, '  ', !i) +
+      '  ' +
+      name +
+      printDirectives(value.deprecationReason ? { deprecated: { $ref: "", meta: { reason: value.deprecationReason } } } : {})
+  }) 
 
   return printDescription(type.description) + `enum ${name}` + printBlock(values)
 }

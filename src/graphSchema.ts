@@ -38,8 +38,8 @@ export interface GraphSchema extends JSONSchema6 {
   "args"?: GraphSchema
   // Custom field for interfaces (for object type only)
   "interfaces"?: { $ref: string }[]
-  // Custom field for enum with description and directives
-  "values"?: GraphEnumValue[]
+  // Custom field for enum with description or deprecation
+  "values"?: Record<string, GraphEnumValue>
   // Custom field for scalar types
   "specifiedByURL"?: string
 }
@@ -55,12 +55,9 @@ export interface GraphApiDirective {
 
 // ENUM
 export interface GraphEnumValue {
-  // kind = "ENUM"
-  value: string
-
   // description
   description?: string
 
-  // Custom field: type derictives
-  directives?: Record<string, GraphApiDirective>
+  // deprecated flag with deprecation reason
+  deprecationReason?: string
 }

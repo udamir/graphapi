@@ -346,7 +346,7 @@ type Mutation {
 }`
 
   let apiText = `---
-graphapi: 0.1.0
+graphapi: 0.1.1
 queries:
   todo:
     title: todo
@@ -432,10 +432,13 @@ components:
     Color:
       title: Color
       type: string
+      enum:
+        - RED
+        - GREEN
       values:
-        - value: RED
+        RED:
           description: Red color
-        - value: GREEN
+        GREEN:
           description: Green color
   inputObjects:
     TodoInputType:

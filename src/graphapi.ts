@@ -11,7 +11,7 @@ export type GraphApiScalarType = "string" | "number" | "integer" | "boolean"
 
 export interface GraphApiSchema {
   // graphapi version 
-  graphapi: "0.1.0"
+  graphapi: "0.1.1"
 
   // schema description
   description?: string
@@ -49,10 +49,6 @@ export interface GraphApiScalar extends GraphSchema {
 
   // default for input values
   default?: any
-
-  // enum values
-  enum?: any
-  values?: GraphEnumValue[]
 }
 
 // OBJECT
@@ -106,11 +102,13 @@ export interface GraphApiInputObject extends GraphSchema {
 
 // ENUM
 export interface GraphApiEnum extends GraphSchema {
+  type: "string"
+
   // simple enum
   enum?: string[]
 
-  // enum with description and directives
-  "values"?: GraphEnumValue[]
+  // enum with description or deprecation
+  "values"?: Record<string, GraphEnumValue>
 }
 
 // LIST

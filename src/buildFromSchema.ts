@@ -12,7 +12,7 @@ import type {
 } from "./graphapi"
 
 import { getScalarType, getScalarTypeFormat } from "./getScalarType"
-import { GraphApiDirective, GraphSchema } from "./graphSchema"
+import { GraphApiDirective, GraphEnumValue, GraphSchema } from "./graphSchema"
 
 const components = {
   ScalarTypeDefinition: "scalars",
@@ -189,19 +189,23 @@ const transfromUnionType = (unionType: GraphQLUnionType, options: BuildOptions):
 }
 
 const transformEnumType = (enumType: GraphQLEnumType, options: BuildOptions): GraphApiEnum => {
-  const simpleEnum = !options.disableStringEnums && !enumType.getValues().find((item) => item.astNode?.directives?.length || item.description)
+  const enumKeys: string[] = []
+  const enumValues = enumType.getValues().reduce((res, { deprecationReason, description, value }) => {
+    enumKeys.push(value)
+    if (deprecationReason || description) {
+      res[value] = {
+        ...deprecationReason ? { deprecationReason } : {},
+        ...description ? { description } : {},
+      }          
+    }
+    return res 
+  }, {} as Record<string, GraphEnumValue>)
 
   return {
     ...transformNamedType(enumType),
     type: "string",
-    ...simpleEnum ? {
-      enum: enumType.getValues().map((item) => item.value)
-    } : {
-      values: enumType.getValues().map((item) => ({
-        value: item.value,
-        ...transformBaseType(item)
-      }))
-    }
+    enum: enumKeys,
+    ...Object.keys(enumValues).length ? { values: enumValues } : {}
   }
 }
 
@@ -302,9 +306,6 @@ const transformDirectiveSchema = (directive: GraphQLDirective, options: BuildOpt
 }
 
 export interface BuildOptions {
-  // false - { enum: ['RED', 'BLUE'] }
-  // true  - { values: [ { value: "RED" }, { value: "BLUE" }] }
-  disableStringEnums?: boolean
 }
 
 export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {}): GraphApiSchema => {
@@ -316,7 +317,7 @@ export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {
   const skip = [qType, mType, sType].reduce((r: string[], i) => i ? [...r, i.name] : r, [])
 
   return {
-    graphapi: "0.1.0",
+    graphapi: "0.1.1",
     ...schema.description ? { description: schema.description } : {},
     ...qType ? { queries: transformOperations(qType.getFields(), options) } : {},
     ...mType ? { mutations: transformOperations(mType.getFields(), options) } : {},

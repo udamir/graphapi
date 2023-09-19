@@ -12,10 +12,10 @@ import type {
 } from "./graphapi"
 
 import { getScalarType, getScalarTypeFormat } from "./getScalarType"
+import { GraphEnumValue, GraphSchema } from "./graphSchema"
 import { BuildOptions } from "./buildFromSchema"
-import { GraphSchema } from "./graphSchema";
 
-const DEFAULT_DEPRECATION_REASON = 'No longer supported';
+const DEFAULT_DEPRECATION_REASON = 'No longer supported'
 
 const components = {
   SCALAR: "scalars",
@@ -142,19 +142,23 @@ const transfromUnionType = (unionType: IntrospectionUnionType, options: BuildOpt
 }
 
 const transformEnumType = (enumType: IntrospectionEnumType, options: BuildOptions): GraphApiEnum => {
-  const simpleEnum = !options.disableStringEnums && !enumType.enumValues.find((item) => item.isDeprecated || item.description)
+  const enumKeys: string[] = []
+  const enumValues = enumType.enumValues.reduce((res, { deprecationReason, description, name }) => {
+    enumKeys.push(name)
+    if (deprecationReason || description) {
+      res[name] = {
+        ...deprecationReason ? { deprecationReason } : {},
+        ...description ? { description } : {},
+      }          
+    }
+    return res 
+  }, {} as Record<string, GraphEnumValue>)
 
   return {
     ...transformNamedType(enumType),
     type: "string",
-    ...simpleEnum ? {
-      enum: enumType.enumValues.map((item) => item.name)
-    } : {
-      values: enumType.enumValues.map((item) => ({
-        ...transformBaseType(item),
-        value: item.name, 
-      }))
-    }
+    enum: enumKeys,
+    ...Object.keys(enumValues).length ? { values: enumValues } : {}
   }
 }
 
@@ -283,7 +287,7 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
   }
 
   return types.reduce(typeReducer, {
-    graphapi: "0.1.0",
+    graphapi: "0.1.1",
     ...description ? { description } : {},
     components: {
       ...directives.length ? { directives: directives.reduce(directiveSchemaReducer(options), {}) } : {}

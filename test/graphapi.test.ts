@@ -74,7 +74,9 @@ describe("Test options", () => {
   it("should enabled simple enum by default for graphql schema", () => {
     const source = `
       enum Color {
+        "Red color"
         RED
+        "Green color"
         GREEN
       }
     `
@@ -87,33 +89,11 @@ describe("Test options", () => {
           Color: {
             title: 'Color',
             type: 'string',
-            enum: ['RED', 'GREEN']
-          }
-        }
-      }
-    })
-  })
-
-  it("should disable simple enum with option  for graphql schema", () => {
-    const source = `
-      enum Color {
-        RED
-        GREEN
-      }
-    `
-    const schema = buildSchema(source, { noLocation: true })
-    const graphapi = buildFromSchema(schema, { disableStringEnums: true })
-
-    expect(graphapi).toMatchObject({
-      components: {
-        enums: {
-          Color: {
-            title: 'Color',
-            type: 'string',
-            values: [
-              { value: 'RED' },
-              { value: 'GREEN' }
-            ]
+            enum: ['RED', 'GREEN'],
+            values: {
+              'RED': { description: 'Red color' },
+              'GREEN': { description: 'Green color' }
+            }
           }
         }
       }
