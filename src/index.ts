@@ -1,4 +1,5 @@
 export * from "./graphapi"
+export * from "./graphSchema"
 export * from "./buildFromSchema"
 export * from "./buildFromIntrospection"
 export * from "./printSchema"

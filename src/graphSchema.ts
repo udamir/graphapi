@@ -19,7 +19,6 @@ export interface GraphSchema extends JSONSchema6 {
   oneOf?: GraphSchema[] // union kind
   allOf?: GraphSchema[]
 
-  not?: GraphSchema
   items?: GraphSchema
   properties?: Record<string, GraphSchema>
   nullable?: boolean
