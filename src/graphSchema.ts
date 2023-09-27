@@ -23,7 +23,7 @@ export interface GraphSchema extends JSONSchema6 {
   properties?: Record<string, GraphSchema>
   nullable?: boolean
 
-  deprecated?: boolean
+  deprecated?: boolean | { reason: string }
 
   // default Value
   default?: any
@@ -58,5 +58,5 @@ export interface GraphEnumValue {
   description?: string
 
   // deprecated flag with deprecation reason
-  deprecationReason?: string
+  deprecated?: boolean | { reason: string }
 }

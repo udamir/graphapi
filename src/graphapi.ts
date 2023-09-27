@@ -11,7 +11,7 @@ export type GraphApiScalarType = "string" | "number" | "integer" | "boolean"
 
 export interface GraphApiSchema {
   // graphapi version 
-  graphapi: "0.1.1"
+  graphapi: "0.1.2"
 
   // schema description
   description?: string

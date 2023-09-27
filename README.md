@@ -24,19 +24,13 @@ npm install gqlapi --save
 import { buildSchema, graphqlSync, getIntrospectionQuery } from "graphql"
 import { buildFromSchema, buildFromIntrospection } from 'gqlapi'
 
-const options = {
-  // false - { enum: ['RED', 'BLUE'] }
-  // true  - { values: [ { value: "RED" }, { value: "BLUE" }] }
-  disableStringEnums: false, // default: false
-}
-
 // build from GraphQL schema
 const schema = buildSchema(data)
-const graphapi = buildFromSchema(schema, options)
+const graphapi = buildFromSchema(schema)
 
 // build from GraphQL introspection
 const introspection = graphqlSync(data, getIntrospectionQuery()).data
-const graphapi = buildFromIntrospection(introspection, options)
+const graphapi = buildFromIntrospection(introspection)
 
 ```
 
@@ -108,7 +102,7 @@ type Mutation {
 ### Output result in yaml format: 
 
 ```yaml
-graphapi: 0.1.0
+graphapi: 0.1.2
 queries:
   todo:
     title: todo
@@ -209,11 +203,8 @@ components:
         name:
           type: string
         completed:
-          directives:
-            deprecated:
-              $ref: '#/components/directives/deprecated'
-              meta:
-                reason: not used
+          deprecated:
+            reason: not used
           type: boolean
         color:
           $ref: '#/components/enums/Color'

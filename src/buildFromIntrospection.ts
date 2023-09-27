@@ -78,16 +78,11 @@ const transformOperations = (fields: readonly IntrospectionField[], options: Bui
 
 const transformBaseType = (baseType: IntrospectionType | IntrospectionEnumValue | IntrospectionField | IntrospectionInputValue): GraphSchema => {
   const isDeprecated = "isDeprecated" in baseType ? baseType.isDeprecated : false
-  const reason = "deprecationReason" in baseType ? baseType.deprecationReason : false
+  const reason = "deprecationReason" in baseType ? baseType.deprecationReason : ''
   return {
     ...baseType.description ? { description: baseType.description } : {},
     ...isDeprecated ? { 
-      directives: {
-        deprecated: {
-          $ref: componentRef("DERICTIVE", "deprecated"),
-          ...reason && reason !== DEFAULT_DEPRECATION_REASON ? { meta: { reason } } : {}
-        }
-      }
+      deprecated: reason && reason !== DEFAULT_DEPRECATION_REASON ? { reason } : true
     } : {}
   }
 }
@@ -252,32 +247,44 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
       default:
         if (current.name.startsWith("__")) { return result }
 
-        const kind = components[current.kind]
-
-        if (!(kind in result.components!)) {
-          result.components![kind] = {}
-        }
-
         switch (current.kind) {
           case "SCALAR":
             if (!['String', 'Int', 'Float', 'Boolean', 'ID'].includes(current.name)) { 
-              result.components!.scalars![current.name] = transformScalarType(current, options)
+              result.components!.scalars = {
+                ...result.components!.scalars,
+                [current.name]: transformScalarType(current, options)
+              }
             }
             break;
           case "OBJECT":
-            result.components!.objects![current.name] = transformObjectType(current, options)
+            result.components!.objects = {
+              ...result.components!.objects,
+              [current.name]: transformObjectType(current, options)
+            }
             break;
           case "INTERFACE":
-            result.components!.interfaces![current.name] = transformObjectType(current, options)
+            result.components!.interfaces = {
+              ...result.components!.interfaces,
+              [current.name]: transformObjectType(current, options)
+            }
             break;
           case "INPUT_OBJECT":
-            result.components!.inputObjects![current.name] = transformInputObjectType(current, options)
+            result.components!.inputObjects = {
+              ...result.components!.inputObjects,
+              [current.name]: transformInputObjectType(current, options)
+            }
             break;
           case "UNION":
-            result.components!.unions![current.name] = transfromUnionType(current, options)
+            result.components!.unions! = {
+              ...result.components!.unions,
+              [current.name]: transfromUnionType(current, options)
+            }
             break;
           case "ENUM": 
-            result.components!.enums![current.name] = transformEnumType(current, options)  
+            result.components!.enums = {
+              ...result.components!.enums,
+              [current.name]: transformEnumType(current, options)  
+            }
             break;
         }
         break;
@@ -286,7 +293,7 @@ export const buildFromIntrospection = ({ __schema }: IntrospectionQuery, options
   }
 
   return types.reduce(typeReducer, {
-    graphapi: "0.1.1",
+    graphapi: "0.1.2",
     ...description ? { description } : {},
     components: {
       ...directives.length ? { directives: directives.reduce(directiveSchemaReducer(options), {}) } : {}

@@ -5,9 +5,8 @@ import {
   GraphApiComponents, GraphApiComponentsKind, GraphApiUnion,
   GraphApiDirectiveDefinition, GraphApiEnum, GraphApiInputObject, 
 } from "./graphapi"
-import { GraphApiDirective, GraphEnumValue, GraphSchema } from "./graphSchema"
+import { GraphApiDirective, GraphSchema } from "./graphSchema"
 
-const DEFAULT_DEPRECATION_REASON = 'No longer supported'
 const buildinDirectives = ["specifiedBy", "deprecated", "skip", "include"]
 const buildinScalars = ["Int", "Float", "Boolean", "String", "ID"]
 
@@ -132,7 +131,7 @@ function printEnum(name: string, type: GraphApiEnum): string {
     return printDescription(value.description, '  ', !i) +
       '  ' +
       name +
-      printDirectives(value.deprecationReason ? { deprecated: { $ref: "", meta: { reason: value.deprecationReason } } } : {})
+      printDirectives({}, value.deprecated)
   }) 
 
   return printDescription(type.description) + `enum ${name}` + printBlock(values)
@@ -154,7 +153,7 @@ function printFields(type: GraphApiObject | GraphApiInterface, required: string[
     printArgs(field.args, '  ') +
     ': ' +
     printTypeRef(field, !required.includes(name)) +
-    printDirectives(field.directives),
+    printDirectives(field.directives, field.deprecated),
   )
   return printBlock(fields)
 }
@@ -224,16 +223,15 @@ function printDirectiveArgs(args: Record<string, any> = {}) {
   return '(' + argList.map(([name, value]) => `${name}: ${printArgValue(value)}`).join(', ') + ')'
 }
 
-function printDirectives(directives?: Record<string, GraphApiDirective>): string {
-  if (!directives) { return '' }
+function printDirectives(directives?: Record<string, GraphApiDirective>, deprecated?: boolean | { reason: string }): string {
+  if (!directives && !deprecated) { return '' }
   let result = ""
-  for (const [name, directive] of Object.entries(directives)) {
-    const meta = { ...directive.meta }
-    if (name === "deprecated" && meta.reason === DEFAULT_DEPRECATION_REASON) {
-      delete meta.reason
-    }
-
-    result += ` @${name}${printDirectiveArgs(meta)}`
+  const _directives: Record<string, GraphApiDirective> = {
+    ...directives,
+    ...deprecated ? { deprecated: { $ref: "", meta: typeof deprecated === 'boolean' ? {} : deprecated } } : {},
+  }
+  for (const [name, directive] of Object.entries(_directives)) {
+    result += ` @${name}${printDirectiveArgs(directive.meta)}`
   }
   return result
 }
@@ -243,7 +241,7 @@ function printInputValue(name: string, arg: GraphSchema, required = false): stri
   return (
     name + ': ' + type + 
     (arg.default !== undefined ? ` = ${String(arg.default)}` : "") + 
-    printDirectives(arg.directives)
+    printDirectives(arg.directives, arg.deprecated)
   )
 }
 

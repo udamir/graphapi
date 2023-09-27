@@ -74,10 +74,11 @@ describe("Test options", () => {
   it("should enabled simple enum by default for graphql schema", () => {
     const source = `
       enum Color {
+        BLUE
         "Red color"
-        RED
+        RED @deprecated
         "Green color"
-        GREEN
+        GREEN @deprecated(reason: "not used")
       }
     `
     const schema = buildSchema(source, { noLocation: true })
@@ -89,10 +90,10 @@ describe("Test options", () => {
           Color: {
             title: 'Color',
             type: 'string',
-            enum: ['RED', 'GREEN'],
+            enum: ['BLUE', 'RED', 'GREEN'],
             values: {
-              'RED': { description: 'Red color' },
-              'GREEN': { description: 'Green color' }
+              'RED': { description: 'Red color', deprecated: true },
+              'GREEN': { description: 'Green color', deprecated: { reason: "not used" } }
             }
           }
         }

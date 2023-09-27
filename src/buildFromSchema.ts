@@ -14,6 +14,8 @@ import type {
 import { getScalarType, getScalarTypeFormat } from "./getScalarType"
 import { GraphApiDirective, GraphEnumValue, GraphSchema } from "./graphSchema"
 
+const DEFAULT_DEPRECATION_REASON = 'No longer supported'
+
 const components = {
   ScalarTypeDefinition: "scalars",
   ObjectTypeDefinition: "objects",
@@ -99,7 +101,9 @@ const transformOperations = (fields: Record<string, GraphQLField<any, any>>, opt
 }
 
 const directiveNodeReducer = (result: Record<string, GraphApiDirective>, value: ConstDirectiveNode) => {
-  result[value.name.value] = transformDirectiveNode(value)
+  if (value.name.value !== 'deprecated') {
+    result[value.name.value] = transformDirectiveNode(value)
+  }
   return result
 }
 
@@ -131,10 +135,12 @@ const transformDirectiveNode = (node: ConstDirectiveNode): any => {
 }
 
 const transformBaseType = (baseType: GraphQLNamedType | GraphQLEnumValue | GraphQLField<any, any> | GraphQLInputField): GraphSchema => {
-  const directives = baseType.astNode?.directives
+  const directives = (baseType.astNode?.directives ?? []).reduce(directiveNodeReducer, {})
+  const reason = 'deprecationReason' in baseType ? baseType.deprecationReason : ''
   return {
+    ...reason ? { deprecated: reason !== DEFAULT_DEPRECATION_REASON ? { reason } : true } : {},
     ...baseType.description ? { description: baseType.description } : {},
-    ...directives?.length ? { directives: directives.reduce(directiveNodeReducer, {})  } : {},
+    ...Object(directives).length ? { directives } : {},
   }
 }
 
@@ -190,11 +196,11 @@ const transfromUnionType = (unionType: GraphQLUnionType, options: BuildOptions):
 
 const transformEnumType = (enumType: GraphQLEnumType, options: BuildOptions): GraphApiEnum => {
   const enumKeys: string[] = []
-  const enumValues = enumType.getValues().reduce((res, { deprecationReason, description, value }) => {
+  const enumValues = enumType.getValues().reduce((res, { deprecationReason: reason, description, value }) => {
     enumKeys.push(value)
-    if (deprecationReason || description) {
+    if (reason || description) {
       res[value] = {
-        ...deprecationReason ? { deprecationReason } : {},
+        ...reason ? { deprecated: reason === DEFAULT_DEPRECATION_REASON ? true: { reason }} : {},
         ...description ? { description } : {},
       }          
     }
@@ -317,7 +323,7 @@ export const buildFromSchema = (schema: GraphQLSchema, options: BuildOptions = {
   const skip = [qType, mType, sType].reduce((r: string[], i) => i ? [...r, i.name] : r, [])
 
   return {
-    graphapi: "0.1.1",
+    graphapi: "0.1.2",
     ...schema.description ? { description: schema.description } : {},
     ...qType ? { queries: transformOperations(qType.getFields(), options) } : {},
     ...mType ? { mutations: transformOperations(mType.getFields(), options) } : {},

@@ -1,4 +1,4 @@
-graphapi: 0.1.1
+graphapi: 0.1.2
 queries:
   todo:
     description: A Query with 1 required argument and 1 optional argument
@@ -96,11 +96,8 @@ components:
         name:
           type: string
         completed:
-          directives:
-            deprecated:
-              $ref: '#/components/directives/deprecated'
-              meta:
-                reason: not used
+          deprecated: 
+            reason: not used
           type: boolean
         color:
           $ref: '#/components/enums/Color'
