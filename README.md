@@ -105,7 +105,6 @@ type Mutation {
 graphapi: 0.1.2
 queries:
   todo:
-    title: todo
     description: A Query with 1 required argument and 1 optional argument
     args:
       type: object
@@ -122,7 +121,6 @@ queries:
     $ref: '#/components/objects/Todo'
     nullable: true
   todos:
-    title: todos
     description: Returns a list (or null) that can contain null values
     args:
       type: object
@@ -141,7 +139,6 @@ queries:
     nullable: true
 mutations:
   create_todo:
-    title: create_todo
     description: A Mutation with 1 required argument
     args:
       type: object
