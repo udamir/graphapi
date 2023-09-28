@@ -1,3 +1,5 @@
+directive @limit(offset: Int = 0, limit: Int = 20) on FIELD | FIELD_DEFINITION
+
 type Todo {
   id: ID!
   name: String!
@@ -36,8 +38,8 @@ type Query {
   """
   todos(
     "Required argument that is a list that cannot contain null values"
-    ids: [String!]!
-  ): [Todo]
+    ids: [String!]! 
+  ): [Todo] @limit
 }
 
 type Mutation {

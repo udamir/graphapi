@@ -18,6 +18,9 @@ queries:
     nullable: true
   todos:
     description: Returns a list (or null) that can contain null values
+    directives:
+      limit:
+        $ref: "#/components/directives/limit"
     args:
       type: object
       required:
@@ -138,4 +141,19 @@ components:
           if:
             type: boolean
             description: Skipped when true.
+      repeatable: false
+    limit:
+      title: limit
+      locations:
+        - FIELD
+        - FIELD_DEFINITION
+      args:
+        type: object
+        properties:
+          offset:
+            type: integer
+            default: 0
+          limit:
+            type: integer
+            default: 20
       repeatable: false

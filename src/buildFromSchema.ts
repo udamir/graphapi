@@ -83,7 +83,7 @@ const transformType2Ref = (gqlType: GraphQLNullableType, options: BuildOptions, 
 
 const transfromField = (field: GraphQLField<any, any>, options: BuildOptions): GraphSchema => {
   return {
-    ...transformNamedType(field),
+    ...transformBaseType(field),
     ...field.args.length ? { args: transformArgs(field.args, options) } : {},
   }
 }
@@ -92,8 +92,7 @@ const transformOperations = (fields: Record<string, GraphQLField<any, any>>, opt
   const operations: Record<string, GraphSchema> = {} 
   for (const [ name, field ] of Object.entries(fields)) {
     operations[name] = {
-      ...transformBaseType(field),
-      ...field.args.length ? { args: transformArgs(field.args, options) } : {},
+      ...transfromField(field, options),
       ...transformType2Ref(field.type, options)
     }
   }
@@ -140,7 +139,7 @@ const transformBaseType = (baseType: GraphQLNamedType | GraphQLEnumValue | Graph
   return {
     ...reason ? { deprecated: reason !== DEFAULT_DEPRECATION_REASON ? { reason } : true } : {},
     ...baseType.description ? { description: baseType.description } : {},
-    ...Object(directives).length ? { directives } : {},
+    ...Object.keys(directives).length ? { directives } : {},
   }
 }
 

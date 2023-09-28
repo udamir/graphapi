@@ -3,7 +3,7 @@ import fs from "fs"
 import YAML from "js-yaml"
 
 import { buildFromIntrospection, buildFromSchema, printSchema } from "../src/index"
-import { buildSchema } from "graphql"
+import { buildSchema, getIntrospectionQuery, graphqlSync } from "graphql"
 
 const loadFile = (filename: string): string => {
   const resPath = path.join(__dirname, "./resources/", filename)
@@ -45,10 +45,17 @@ describe("Build GraphApi", () => {
 
   it("should build graphapi from introspection", async () => {
 
-    const source = JSON.parse(loadFile("example.json"))
-    const graphapi = buildFromIntrospection(source)
+    const source = loadFile("example.graphql")
+    const schema = buildSchema(source, { noLocation: true,  })
+    const introspection: any = graphqlSync({ 
+      schema,
+      source: getIntrospectionQuery({ inputValueDeprecation: true, schemaDescription: true, specifiedByUrl: true })
+    }).data
+    const graphapi = buildFromIntrospection(introspection)
 
-    const example = YAML.load(loadFile("example.yaml")) as object
+    const example = YAML.load(loadFile("example.yaml")) as any
+
+    delete example.queries.todos.directives
 
     expect(graphapi).toMatchObject(example)
   })

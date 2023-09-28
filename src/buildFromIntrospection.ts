@@ -162,13 +162,15 @@ const transformInputObjectType = (inputObjectType: IntrospectionInputObjectType,
   const fields = inputObjectType.inputFields
 
   for (const field of fields) {
+    const defaultValue = getDefaultValue(field)
+
     if (field.type.kind === "NON_NULL") {
       required.push(field.name)
     }
     properties[field.name] = {
       ...transformNamedType(field),
       ...transformType2Ref(field.type, options, true),
-      ...field.defaultValue !== undefined ? { default: field.defaultValue } : {}
+      ...defaultValue ? { default: defaultValue } : {}
     }
   }
 
@@ -188,18 +190,35 @@ const directiveSchemaReducer = (options: BuildOptions) => (result: Record<string
   return result
 }
 
+const getDefaultValue = (arg: IntrospectionInputValue) => {
+  if (!arg.defaultValue || !("name" in arg.type)) {
+    return arg.defaultValue
+  }
+  switch (arg.type.name) {
+    case 'Int':
+    case 'Float':
+      return +arg.defaultValue
+
+    case 'Boolean':
+      return arg.defaultValue === "true"
+  }
+  return arg.defaultValue
+}
+
 const transformArgs = (inputValues: ReadonlyArray<IntrospectionInputValue>, options: BuildOptions): GraphApiArgs => {
   const properties: Record<string, GraphSchema> = {}
   const required: string[] = []
-
+  
   for (const arg of inputValues) {
+    const defaultValue = getDefaultValue(arg)
+
     if (arg.type.kind === "NON_NULL") {
       required.push(arg.name)
     }
     properties[arg.name] = {
       ...transformType2Ref(arg.type, options, true),
       ...transformBaseType(arg),
-      ...arg.defaultValue !== null ? { default: arg.defaultValue } : {}
+      ...defaultValue !== null ? { default: defaultValue } : {}
     }
   }
 
