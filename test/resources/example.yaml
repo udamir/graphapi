@@ -1,89 +1,76 @@
-graphapi: 0.1.2
+graphapi: "1.0"
+queryTypeName: Query
+mutationTypeName: Mutation
 queries:
   todo:
     description: A Query with 1 required argument and 1 optional argument
     args:
-      type: object
-      required:
-        - id
-      properties:
-        id:
-          type: string
-          format: ID
-        isCompleted:
-          type: boolean
-          description: A default value of false
-          default: false
+      id:
+        type: ID
+        nonNull: true
+      isCompleted:
+        description: A default value of false
+        type: Boolean
+        default: false
     $ref: '#/components/objects/Todo'
-    nullable: true
   todos:
     description: Returns a list (or null) that can contain null values
     directives:
-      limit:
-        $ref: "#/components/directives/limit"
+      - $ref: '#/components/directives/limit'
     args:
-      type: object
-      required:
-        - ids
-      properties:
-        ids:
-          type: array
-          items:
-            type: string
-          description: Required argument that is a list that cannot contain null values
-    type: array
+      ids:
+        description: Required argument that is a list that cannot contain null values
+        type: list
+        items:
+          type: String
+          nonNull: true
+        nonNull: true
+    type: list
     items:
       $ref: '#/components/objects/Todo'
-      nullable: true
-    nullable: true
 mutations:
   create_todo:
     description: A Mutation with 1 required argument
     args:
-      type: object
-      required:
-        - todo
-      properties:
-        todo:
-          $ref: '#/components/inputObjects/TodoInputType'
+      todo:
+        $ref: '#/components/inputObjects/TodoInputType'
+        nonNull: true
     $ref: '#/components/objects/Todo'
+    nonNull: true
 components:
   objects:
     Todo:
       title: Todo
       type: object
-      required:
-        - id
-        - name
-        - colors
-      properties:
+      methods:
         id:
-          type: string
-          format: ID
+          type: ID
+          nonNull: true
         name:
-          type: string
+          type: String
+          nonNull: true
         completed:
-          type: boolean
+          type: Boolean
         color:
           $ref: '#/components/enums/Color'
         colors:
           description: A field that requires an argument
-          type: array
+          args:
+            filter:
+              type: list
+              items:
+                $ref: '#/components/enums/Color'
+                nonNull: true
+              nonNull: true
+          type: list
           items:
             $ref: '#/components/enums/Color'
-          args:
-            type: object
-            required:
-              - filter
-            properties:
-              filter:
-                type: array
-                items:
-                  $ref: '#/components/enums/Color'
+            nonNull: true
+          nonNull: true
   enums:
     Color:
       title: Color
-      type: string
+      type: enum
       values:
         RED:
           description: Red color
@@ -92,68 +79,37 @@ components:
   inputObjects:
     TodoInputType:
       title: TodoInputType
-      type: object
-      required:
-        - name
+      type: input
       properties:
         name:
-          type: string
+          type: String
+          nonNull: true
         completed:
-          deprecated: 
+          deprecation:
             reason: not used
-          type: boolean
+          directives:
+            - $ref: '#/components/directives/deprecated'
+              meta:
+                reason: not used
+          type: Boolean
         color:
           $ref: '#/components/enums/Color'
           default: RED
   directives:
-    include:
-      title: include
-      description: >-
-        Directs the executor to include this field or fragment only when the
-        `if` argument is true.
-      locations:
-        - FIELD
-        - FRAGMENT_SPREAD
-        - INLINE_FRAGMENT
-      args:
-        type: object
-        required:
-          - if
-        properties:
-          if:
-            type: boolean
-            description: Included when true.
-      repeatable: false
-    skip:
-      title: skip
-      description: >-
-        Directs the executor to skip this field or fragment when the `if`
-        argument is true.
-      locations:
-        - FIELD
-        - FRAGMENT_SPREAD
-        - INLINE_FRAGMENT
-      args:
-        type: object
-        required:
-          - if
-        properties:
-          if:
-            type: boolean
-            description: Skipped when true.
-      repeatable: false
     limit:
       title: limit
       locations:
         - FIELD
         - FIELD_DEFINITION
       args:
-        type: object
-        properties:
-          offset:
-            type: integer
-            default: 0
-          limit:
-            type: integer
-            default: 20
+        offset:
+          type: Int
+          default: 0
+        limit:
+          type: Int
+          default: 20
+      repeatable: false
+    # the definition of the built-in @deprecated (listed because it is used) depends on the graphql-js version
+    deprecated:
+      title: deprecated
       repeatable: false

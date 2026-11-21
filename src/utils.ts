@@ -1,20 +1,26 @@
-export type Maybe<T> = null | undefined | T;
+export type Maybe<T> = null | undefined | T
 
-export const mapRecord = <T, K>(record: Record<string, T>, iterator: (item: T, key: string, record: Record<string, T>) => K ) => {
-  return Object.fromEntries(Object.entries(record).map(([key, item]) => [key, iterator(item, key, record)])) 
+/** The last segment of a JSON pointer: `#/components/objects/User` → `User` */
+export const nameOfRef = (ref: string): string => ref.slice(ref.lastIndexOf("/") + 1)
+
+export const mapRecord = <T, K>(
+  record: Record<string, T>,
+  iterator: (item: T, key: string, record: Record<string, T>) => K,
+) => {
+  return Object.fromEntries(Object.entries(record).map(([key, item]) => [key, iterator(item, key, record)]))
 }
 
 // graphql-js internal function
 
 export function isPrintableAsBlockString(value: string): boolean {
-  if (value === '') {
-    return true; // empty string is printable
+  if (value === "") {
+    return true // empty string is printable
   }
 
-  let isEmptyLine = true;
-  let hasIndent = false;
-  let hasCommonIndent = true;
-  let seenNonEmptyLine = false;
+  let isEmptyLine = true
+  let hasIndent = false
+  let hasCommonIndent = true
+  let seenNonEmptyLine = false
 
   for (let i = 0; i < value.length; ++i) {
     switch (value.codePointAt(i)) {
@@ -31,39 +37,39 @@ export function isPrintableAsBlockString(value: string): boolean {
       case 0x000c:
       case 0x000e:
       case 0x000f:
-        return false; // Has non-printable characters
+        return false // Has non-printable characters
 
       case 0x000d: //  \r
-        return false; // Has \r or \r\n which will be replaced as \n
+        return false // Has \r or \r\n which will be replaced as \n
 
       case 10: //  \n
         if (isEmptyLine && !seenNonEmptyLine) {
-          return false; // Has leading new line
+          return false // Has leading new line
         }
-        seenNonEmptyLine = true;
+        seenNonEmptyLine = true
 
-        isEmptyLine = true;
-        hasIndent = false;
-        break;
+        isEmptyLine = true
+        hasIndent = false
+        break
       case 9: //   \t
       case 32: //  <space>
-        hasIndent ||= isEmptyLine;
-        break;
+        hasIndent ||= isEmptyLine
+        break
       default:
-        hasCommonIndent &&= hasIndent;
-        isEmptyLine = false;
+        hasCommonIndent &&= hasIndent
+        isEmptyLine = false
     }
   }
 
   if (isEmptyLine) {
-    return false; // Has trailing empty lines
+    return false // Has trailing empty lines
   }
 
   if (hasCommonIndent && seenNonEmptyLine) {
-    return false; // Has internal indent
+    return false // Has internal indent
   }
 
-  return true;
+  return true
 }
 
 /**
@@ -75,14 +81,17 @@ export function isPrintableAsBlockString(value: string): boolean {
  * @internal
  */
 export function isWhiteSpace(code: number): boolean {
-  return code === 0x0009 || code === 0x0020;
+  return code === 0x0009 || code === 0x0020
 }
 
 // eslint-disable-next-line no-control-regex
-const escapedRegExp = /[\x00-\x1f\x22\x5c\x7f-\x9f]/g;
+const escapedRegExp = /[\x00-\x1f\x22\x5c\x7f-\x9f]/g
+// the same characters, for a test without the global flag (no lastIndex state)
+// eslint-disable-next-line no-control-regex
+const needsEscapeRegExp = /[\x00-\x1f\x22\x5c\x7f-\x9f]/
 
 function escapedReplacer(str: string): string {
-  return escapeSequences[str.charCodeAt(0)];
+  return escapeSequences[str.charCodeAt(0)]
 }
 
 // prettier-ignore
@@ -107,10 +116,14 @@ const escapeSequences = [
   '\\u0088', '\\u0089', '\\u008A', '\\u008B', '\\u008C', '\\u008D', '\\u008E', '\\u008F',
   '\\u0090', '\\u0091', '\\u0092', '\\u0093', '\\u0094', '\\u0095', '\\u0096', '\\u0097',
   '\\u0098', '\\u0099', '\\u009A', '\\u009B', '\\u009C', '\\u009D', '\\u009E', '\\u009F',
-];
+]
 
 export function printString(str: string): string {
-  return `"${str.replace(escapedRegExp, escapedReplacer)}"`;
+  // most strings need no escaping: a test is cheaper than a replace that finds nothing
+  if (!needsEscapeRegExp.test(str)) {
+    return '"' + str + '"'
+  }
+  return `"${str.replace(escapedRegExp, escapedReplacer)}"`
 }
 
 /**
@@ -120,52 +133,42 @@ export function printString(str: string): string {
  *
  * graphql-js internal function
  */
-export function printBlockString(
-  value: string,
-  options?: { minimize?: boolean },
-): string {
-  const escapedValue = value.replaceAll('"""', '\\"""');
+export function printBlockString(value: string, options?: { minimize?: boolean }): string {
+  const escapedValue = value.replaceAll('"""', '\\"""')
 
   // Expand a block string's raw value into independent lines.
-  const lines = escapedValue.split(/\r\n|[\n\r]/g);
-  const isSingleLine = lines.length === 1;
+  const lines = escapedValue.split(/\r\n|[\n\r]/g)
+  const isSingleLine = lines.length === 1
 
   // If common indentation is found we can fix some of those cases by adding leading new line
   const forceLeadingNewLine =
-    lines.length > 1 &&
-    lines
-      .slice(1)
-      .every((line) => line.length === 0 || isWhiteSpace(line.charCodeAt(0)));
+    lines.length > 1 && lines.slice(1).every((line) => line.length === 0 || isWhiteSpace(line.charCodeAt(0)))
 
   // Trailing triple quotes just looks confusing but doesn't force trailing new line
-  const hasTrailingTripleQuotes = escapedValue.endsWith('\\"""');
+  const hasTrailingTripleQuotes = escapedValue.endsWith('\\"""')
 
   // Trailing quote (single or double) or slash forces trailing new line
-  const hasTrailingQuote = value.endsWith('"') && !hasTrailingTripleQuotes;
-  const hasTrailingSlash = value.endsWith('\\');
-  const forceTrailingNewline = hasTrailingQuote || hasTrailingSlash;
+  const hasTrailingQuote = value.endsWith('"') && !hasTrailingTripleQuotes
+  const hasTrailingSlash = value.endsWith("\\")
+  const forceTrailingNewline = hasTrailingQuote || hasTrailingSlash
 
   const printAsMultipleLines =
     !options?.minimize &&
     // add leading and trailing new lines only if it improves readability
-    (!isSingleLine ||
-      value.length > 70 ||
-      forceTrailingNewline ||
-      forceLeadingNewLine ||
-      hasTrailingTripleQuotes);
+    (!isSingleLine || value.length > 70 || forceTrailingNewline || forceLeadingNewLine || hasTrailingTripleQuotes)
 
-  let result = '';
+  let result = ""
 
   // Format a multi-line block quote to account for leading space.
-  const skipLeadingNewLine = isSingleLine && isWhiteSpace(value.charCodeAt(0));
+  const skipLeadingNewLine = isSingleLine && isWhiteSpace(value.charCodeAt(0))
   if ((printAsMultipleLines && !skipLeadingNewLine) || forceLeadingNewLine) {
-    result += '\n';
+    result += "\n"
   }
 
-  result += escapedValue;
+  result += escapedValue
   if (printAsMultipleLines || forceTrailingNewline) {
-    result += '\n';
+    result += "\n"
   }
 
-  return '"""' + result + '"""';
+  return '"""' + result + '"""'
 }
