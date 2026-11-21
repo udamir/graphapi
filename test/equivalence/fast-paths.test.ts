@@ -1,6 +1,6 @@
 // Test plan block E: the direct paths (buildFromSchema without the IR, printSchema without lift) produce exactly what
 // the IR paths produce: the same document with the same key order, the same SDL, the same errors
-import { Kind, extendSchema, parse, print } from "graphql"
+import { Kind, extendSchema, parse, print, specifiedDirectives } from "graphql"
 
 import { fromGraphQLSchema, fromIR, printIR, printSchema, toIR, buildFromSchema } from "../../src/index"
 import type { GraphApiSchema } from "../../src/index"
@@ -108,7 +108,10 @@ const TRICKY: Record<string, string> = {
 
 const sources: [string, string][] = [
   ...fixtures(),
-  ...CASES.map(({ id, sdl }): [string, string] => [`docs example ${id}`, sdl]),
+  ...CASES
+    // `@oneOf` is a built-in directive of graphql@16.9 and later only
+    .filter(({ id }) => id !== "one-of" || specifiedDirectives.some((directive) => directive.name === "oneOf"))
+    .map(({ id, sdl }): [string, string] => [`docs example ${id}`, sdl]),
   ...Object.entries(TRICKY),
 ]
 
