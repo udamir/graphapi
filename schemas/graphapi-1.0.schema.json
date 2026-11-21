@@ -1,0 +1,941 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://udamir.github.io/graphapi/schemas/graphapi-1.0.schema.json",
+  "title": "GraphAPI 1.0 document",
+  "description": "A GraphAPI 1.0 document describes a GraphQL schema as a JSON value designed to be compared and processed by tools.",
+  "type": "object",
+  "required": ["graphapi"],
+  "additionalProperties": false,
+  "properties": {
+    "graphapi": {
+      "description": "The specification version. MUST be the string \"1.0\" (in YAML it MUST be quoted).",
+      "const": "1.0"
+    },
+    "description": {
+      "$ref": "#/$defs/description",
+      "description": "The description of the schema definition."
+    },
+    "directives": {
+      "$ref": "#/$defs/directives",
+      "description": "Directive usages on the schema definition (location SCHEMA), including those added with extend schema @d."
+    },
+    "queryTypeName": {
+      "$ref": "#/$defs/name",
+      "description": "Name of the query root type. Present if and only if the schema has a query root type, whatever its name."
+    },
+    "mutationTypeName": {
+      "$ref": "#/$defs/name",
+      "description": "Name of the mutation root type. Present if and only if the schema has a mutation root type."
+    },
+    "subscriptionTypeName": {
+      "$ref": "#/$defs/name",
+      "description": "Name of the subscription root type. Present if and only if the schema has a subscription root type."
+    },
+    "rootTypes": {
+      "$ref": "#/$defs/rootTypes"
+    },
+    "queries": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/operation"
+      },
+      "description": "The fields of the query root type, keyed by field name. Present if and only if the schema has a query root type."
+    },
+    "mutations": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/operation"
+      },
+      "description": "The fields of the mutation root type, keyed by field name. Present if and only if the schema has a mutation root type."
+    },
+    "subscriptions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/operation"
+      },
+      "description": "The fields of the subscription root type, keyed by field name. Present if and only if the schema has a subscription root type."
+    },
+    "components": {
+      "$ref": "#/$defs/components"
+    }
+  },
+  "dependentRequired": {
+    "queryTypeName": ["queries"],
+    "queries": ["queryTypeName"],
+    "mutationTypeName": ["mutations"],
+    "mutations": ["mutationTypeName"],
+    "subscriptionTypeName": ["subscriptions"],
+    "subscriptions": ["subscriptionTypeName"]
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["rootTypes"],
+        "properties": {
+          "rootTypes": {
+            "type": "object",
+            "required": ["query"],
+            "properties": {
+              "query": true
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["queries"],
+        "properties": {
+          "queries": true
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["rootTypes"],
+        "properties": {
+          "rootTypes": {
+            "type": "object",
+            "required": ["mutation"],
+            "properties": {
+              "mutation": true
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["mutations"],
+        "properties": {
+          "mutations": true
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["rootTypes"],
+        "properties": {
+          "rootTypes": {
+            "type": "object",
+            "required": ["subscription"],
+            "properties": {
+              "subscription": true
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["subscriptions"],
+        "properties": {
+          "subscriptions": true
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "name": {
+      "title": "Name",
+      "description": "A GraphQL name (the key of every entry MUST be the GraphQL name of the type or directive).",
+      "type": "string",
+      "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+    },
+    "description": {
+      "title": "Description",
+      "description": "The description of an element; omitted when there is no description or an empty description.",
+      "type": "string",
+      "minLength": 1
+    },
+    "components": {
+      "title": "Components Object",
+      "description": "Holds the named types and directive definitions of the schema, grouped by kind; every definition has the type of its section. The Components Object itself MUST be omitted when all its sections are.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "scalars": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__|(?:Int|Float|String|Boolean|ID)$)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/scalar"
+          },
+          "description": "Custom scalar types. Built-in scalars MUST NOT appear."
+        },
+        "objects": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/object"
+          },
+          "description": "Object types other than the root operation types."
+        },
+        "interfaces": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/interface"
+          },
+          "description": "Interface types."
+        },
+        "unions": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/union"
+          },
+          "description": "Union types."
+        },
+        "enums": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/enum"
+          },
+          "description": "Enum types."
+        },
+        "inputObjects": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!__)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/inputObject"
+          },
+          "description": "Input object types."
+        },
+        "directives": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/directiveDefinition"
+          },
+          "description": "Directive definitions: every custom definition, and the built-in definitions that are used or overridden."
+        }
+      }
+    },
+    "objectReference": {
+      "title": "Object Reference Object",
+      "description": "A union member type: { $ref: '#/components/objects/<Name>' }.",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/objects/[_A-Za-z][_0-9A-Za-z]*$"
+        }
+      }
+    },
+    "interfaceReference": {
+      "title": "Interface Reference Object",
+      "description": "An implemented interface: { $ref: '#/components/interfaces/<Name>' }.",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/interfaces/[_A-Za-z][_0-9A-Za-z]*$"
+        }
+      }
+    },
+    "implementerReference": {
+      "title": "Implementer Reference Object",
+      "description": "An entry of implementedBy: an object or interface component whose interfaces contains this interface.",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/(?:objects|interfaces)/[_A-Za-z][_0-9A-Za-z]*$"
+        }
+      }
+    },
+    "nonNull": {
+      "title": "Non-null",
+      "description": "Present, with the value true, when the position is non-null, where the SDL writes !. Absent means nullable. Producers MUST NOT write nonNull: false.",
+      "const": true
+    },
+    "usageType": {
+      "title": "Usage type",
+      "description": "The type of a Type Usage: a built-in scalar (Int, Float, String, Boolean, ID), which is not stored in components, or list.",
+      "enum": ["Int", "Float", "String", "Boolean", "ID", "list"]
+    },
+    "outputTypeUsage": {
+      "title": "Output Type Usage",
+      "description": "A reference to a type at an output position (operation or field result, output list item), written flat next to the properties of the usage site: exactly one of $ref (a custom scalar, object, interface, union or enum) and type (a built-in scalar, or list with items), plus nonNull: true when non-null.",
+      "type": "object",
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/(?:scalars|objects|interfaces|unions|enums)/[_A-Za-z][_0-9A-Za-z]*$",
+          "description": "A named type: #/components/<section>/<Name>."
+        },
+        "type": {
+          "$ref": "#/$defs/usageType"
+        },
+        "items": {
+          "$ref": "#/$defs/outputListItem",
+          "description": "The type usage of the list item, with its own nonNull. Present if and only if type is list."
+        },
+        "nonNull": {
+          "$ref": "#/$defs/nonNull"
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["$ref"],
+          "properties": {
+            "$ref": true
+          }
+        },
+        {
+          "required": ["type"],
+          "properties": {
+            "type": true
+          }
+        }
+      ],
+      "if": {
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "const": "list"
+          }
+        }
+      },
+      "then": {
+        "required": ["items"],
+        "properties": {
+          "items": true
+        }
+      },
+      "else": {
+        "not": {
+          "required": ["items"],
+          "properties": {
+            "items": true
+          }
+        }
+      }
+    },
+    "outputListItem": {
+      "title": "Output list item",
+      "description": "The items of a list in an output position: an Output Type Usage without any other property.",
+      "type": "object",
+      "$ref": "#/$defs/outputTypeUsage",
+      "unevaluatedProperties": false
+    },
+    "inputTypeUsage": {
+      "title": "Input Type Usage",
+      "description": "A reference to a type at an input position (argument, input field, directive argument, input list item), written flat next to the properties of the usage site: exactly one of $ref (a custom scalar, enum or input object) and type (a built-in scalar, or list with items), plus nonNull: true when non-null.",
+      "type": "object",
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/(?:scalars|enums|inputObjects)/[_A-Za-z][_0-9A-Za-z]*$",
+          "description": "A named type: #/components/<section>/<Name>."
+        },
+        "type": {
+          "$ref": "#/$defs/usageType"
+        },
+        "items": {
+          "$ref": "#/$defs/inputListItem",
+          "description": "The type usage of the list item, with its own nonNull. Present if and only if type is list."
+        },
+        "nonNull": {
+          "$ref": "#/$defs/nonNull"
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["$ref"],
+          "properties": {
+            "$ref": true
+          }
+        },
+        {
+          "required": ["type"],
+          "properties": {
+            "type": true
+          }
+        }
+      ],
+      "if": {
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "const": "list"
+          }
+        }
+      },
+      "then": {
+        "required": ["items"],
+        "properties": {
+          "items": true
+        }
+      },
+      "else": {
+        "not": {
+          "required": ["items"],
+          "properties": {
+            "items": true
+          }
+        }
+      }
+    },
+    "inputListItem": {
+      "title": "Input list item",
+      "description": "The items of a list in an input position: an Input Type Usage without any other property.",
+      "type": "object",
+      "$ref": "#/$defs/inputTypeUsage",
+      "unevaluatedProperties": false
+    },
+    "deprecation": {
+      "title": "Deprecation Object",
+      "description": "The resolved deprecation reason: the given reason, or \"No longer supported\" when none was given.",
+      "type": "object",
+      "required": ["reason"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "directiveUsage": {
+      "title": "Directive Usage Object",
+      "description": "One application of a directive to an element: { $ref: '#/components/directives/<name>', meta? }.",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^#/components/directives/[_A-Za-z][_0-9A-Za-z]*$",
+          "description": "The applied directive definition."
+        },
+        "meta": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": true,
+          "description": "The arguments given in the usage, keyed by argument name, as JSON values. Omitted when the usage has no arguments."
+        }
+      }
+    },
+    "directives": {
+      "title": "Directive usages",
+      "description": "Elements list their usages in a directives array in source order; a repeatable directive applied several times produces one entry per usage.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/directiveUsage"
+      }
+    },
+    "deprecatedUsage": {
+      "title": "@deprecated usage",
+      "description": "A directive usage whose $ref is '#/components/directives/deprecated'.",
+      "type": "object",
+      "required": ["$ref"],
+      "properties": {
+        "$ref": {
+          "const": "#/components/directives/deprecated"
+        }
+      }
+    },
+    "deprecatable": {
+      "title": "Element Object",
+      "description": "An element that is deprecated MUST carry both the Deprecation Object and, as the first entry of its directives, the usage { $ref: '#/components/directives/deprecated', meta: { reason } }.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "deprecation": {
+          "$ref": "#/$defs/deprecation"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "if": {
+              "$ref": "#/$defs/deprecatedUsage"
+            },
+            "then": {
+              "required": ["meta"],
+              "properties": {
+                "meta": {
+                  "type": "object",
+                  "required": ["reason"],
+                  "properties": {
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["deprecation"],
+            "properties": {
+              "deprecation": true
+            }
+          },
+          "then": {
+            "required": ["directives"],
+            "properties": {
+              "directives": {
+                "type": "array",
+                "contains": {
+                  "$ref": "#/$defs/deprecatedUsage"
+                },
+                "maxContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["directives"],
+            "properties": {
+              "directives": {
+                "type": "array",
+                "contains": {
+                  "$ref": "#/$defs/deprecatedUsage"
+                }
+              }
+            }
+          },
+          "then": {
+            "required": ["deprecation"],
+            "properties": {
+              "deprecation": true
+            }
+          }
+        }
+      ]
+    },
+    "operation": {
+      "title": "Operation Object",
+      "description": "A field of a root operation type (in queries, mutations, subscriptions) or of an object or interface type (in methods): an Element Object with args and the result type written flat as an Output Type Usage.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/deprecatable"
+        },
+        {
+          "$ref": "#/$defs/outputTypeUsage"
+        }
+      ],
+      "properties": {
+        "args": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/argument"
+          },
+          "description": "The field arguments, keyed by name, in declaration order. Omitted when the field has none."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "argument": {
+      "title": "Argument Object",
+      "description": "An argument of a field or directive definition, or an input object field: an Element Object with its type written flat as an Input Type Usage and an optional default.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/deprecatable"
+        },
+        {
+          "$ref": "#/$defs/inputTypeUsage"
+        }
+      ],
+      "properties": {
+        "default": {
+          "description": "The default value as a JSON value. Present when, and only when, a default is declared; a declared null default is written as default: null."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "enumValue": {
+      "title": "Enum Value Object",
+      "description": "An Enum Value Object is an Element Object (location ENUM_VALUE for its directives). A value without description, deprecation and directives is the empty object {}.",
+      "type": "object",
+      "$ref": "#/$defs/deprecatable",
+      "unevaluatedProperties": false
+    },
+    "scalar": {
+      "title": "Scalar Object",
+      "description": "A Definition Object for a custom scalar: type \"scalar\" and an optional specifiedByURL.",
+      "type": "object",
+      "required": ["title", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "scalar",
+          "description": "The kind of the definition: \"scalar\", as for every definition in components.scalars."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "specifiedByURL": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The url of the scalar's @specifiedBy directive."
+        }
+      }
+    },
+    "object": {
+      "title": "Object Type Object",
+      "description": "A Definition Object for an object type other than a root operation type: type \"object\", interfaces and methods.",
+      "type": "object",
+      "required": ["title", "type", "methods"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "object",
+          "description": "The kind of the definition: \"object\", as for every definition in components.objects."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "interfaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/interfaceReference"
+          },
+          "description": "The interfaces this type implements, in declaration order. Omitted when it implements none."
+        },
+        "methods": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/operation"
+          },
+          "description": "The fields, keyed by name, in declaration order (fields added by extend follow)."
+        }
+      }
+    },
+    "interface": {
+      "title": "Interface Object",
+      "description": "A Definition Object for an interface type: type \"interface\", interfaces, implementedBy and methods.",
+      "type": "object",
+      "required": ["title", "type", "methods"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "interface",
+          "description": "The kind of the definition: \"interface\", as for every definition in components.interfaces."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "interfaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/interfaceReference"
+          },
+          "description": "The interfaces this type implements, in declaration order. Omitted when it implements none."
+        },
+        "implementedBy": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/implementerReference"
+          },
+          "description": "Interfaces only: every object and interface component whose interfaces contains this interface, sorted by type name. Root operation types are not listed. Omitted when there is none."
+        },
+        "methods": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/operation"
+          },
+          "description": "The fields, keyed by name, in declaration order (fields added by extend follow)."
+        }
+      }
+    },
+    "union": {
+      "title": "Union Object",
+      "description": "A Definition Object for a union type: type \"union\" and oneOf.",
+      "type": "object",
+      "required": ["title", "type", "oneOf"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "union",
+          "description": "The kind of the definition: \"union\", as for every definition in components.unions."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "oneOf": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/objectReference"
+          },
+          "description": "The member types (#/components/objects/<Name>), in declaration order."
+        }
+      }
+    },
+    "enum": {
+      "title": "Enum Object",
+      "description": "A Definition Object for an enum type: type \"enum\" and values.",
+      "type": "object",
+      "required": ["title", "type", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "enum",
+          "description": "The kind of the definition: \"enum\", as for every definition in components.enums."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "values": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^(?!(?:true|false|null)$)[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/enumValue"
+          },
+          "description": "Every value of the enum, keyed by its (case-sensitive) name, in declaration order."
+        }
+      }
+    },
+    "inputObject": {
+      "title": "Input Object Object",
+      "description": "A Definition Object for an input object type: type \"input\" and properties.",
+      "type": "object",
+      "required": ["title", "type", "properties"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The type name."
+        },
+        "type": {
+          "const": "input",
+          "description": "The kind of the definition: \"input\", as for every definition in components.inputObjects."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the type (location SCALAR, OBJECT, INTERFACE, UNION, ENUM or INPUT_OBJECT), including those added with extend … @d."
+        },
+        "properties": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/argument"
+          },
+          "description": "The input fields, keyed by name, in declaration order."
+        }
+      }
+    },
+    "directiveDefinition": {
+      "title": "Directive Definition Object",
+      "description": "A directive definition stored in components.directives.",
+      "type": "object",
+      "required": ["title", "locations", "repeatable"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/name",
+          "description": "The directive name, without @."
+        },
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "locations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/directiveLocation"
+          },
+          "description": "The directive locations (FIELD_DEFINITION, OBJECT, …), in declaration order."
+        },
+        "args": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/argument"
+          },
+          "description": "The directive arguments. Omitted when the directive has none."
+        },
+        "repeatable": {
+          "type": "boolean",
+          "description": "true for a repeatable directive, false otherwise. Always present."
+        }
+      }
+    },
+    "directiveLocation": {
+      "title": "Directive location",
+      "description": "A GraphQL directive location name.",
+      "enum": [
+        "QUERY",
+        "MUTATION",
+        "SUBSCRIPTION",
+        "FIELD",
+        "FRAGMENT_DEFINITION",
+        "FRAGMENT_SPREAD",
+        "INLINE_FRAGMENT",
+        "VARIABLE_DEFINITION",
+        "FRAGMENT_VARIABLE_DEFINITION",
+        "SCHEMA",
+        "SCALAR",
+        "OBJECT",
+        "FIELD_DEFINITION",
+        "ARGUMENT_DEFINITION",
+        "INTERFACE",
+        "UNION",
+        "ENUM",
+        "ENUM_VALUE",
+        "INPUT_OBJECT",
+        "INPUT_FIELD_DEFINITION",
+        "DIRECTIVE_DEFINITION"
+      ]
+    },
+    "rootTypes": {
+      "title": "Root Types Object",
+      "description": "The Root Types Object has the optional fields query, mutation and subscription, each a Root Type Object for the corresponding root operation type.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/rootType"
+        },
+        "mutation": {
+          "$ref": "#/$defs/rootType"
+        },
+        "subscription": {
+          "$ref": "#/$defs/rootType"
+        }
+      }
+    },
+    "rootType": {
+      "title": "Root Type Object",
+      "description": "Description, directive usages and implemented interfaces of a root operation type. An entry MUST be omitted when the root type has no description, no directive usages and implements no interface.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "$ref": "#/$defs/description"
+        },
+        "directives": {
+          "$ref": "#/$defs/directives",
+          "description": "Directive usages on the root type (location OBJECT)."
+        },
+        "interfaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/interfaceReference"
+          },
+          "description": "The interfaces the root type implements (type Query implements Node), in declaration order."
+        }
+      }
+    }
+  }
+}

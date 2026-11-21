@@ -1,6 +1,6 @@
 import path from "path"
 import fs from "fs"
-import YAML from "js-yaml"
+import * as YAML from "js-yaml"
 
 import { buildFromIntrospection, buildFromSchema, printSchema } from "../src/index"
 import { buildSchema, getIntrospectionQuery, graphqlSync } from "graphql"
@@ -11,7 +11,6 @@ const loadFile = (filename: string): string => {
 }
 
 describe("Build GraphApi", () => {
-
   it("should be nullable query for Scalar result", () => {
     const raw = `
     type Query {
@@ -26,14 +25,11 @@ describe("Build GraphApi", () => {
     `
     const graphapi = buildFromSchema(buildSchema(raw, { noLocation: true }))
 
-    expect(graphapi.queries!.todo).toMatchObject({
-      type: 'string',
-      nullable: true
-    })
+    expect(graphapi.queries!.todo).toMatchObject({ type: "String" })
+    expect(graphapi.queries!.todo.nonNull).toBeUndefined()
   })
 
   it("should build graphapi from graphql schema", async () => {
-
     const source = loadFile("example.graphql")
     const schema = buildSchema(source, { noLocation: true })
     const graphapi = buildFromSchema(schema)
@@ -44,12 +40,11 @@ describe("Build GraphApi", () => {
   })
 
   it("should build graphapi from introspection", async () => {
-
     const source = loadFile("example.graphql")
-    const schema = buildSchema(source, { noLocation: true,  })
-    const introspection: any = graphqlSync({ 
+    const schema = buildSchema(source, { noLocation: true })
+    const introspection: any = graphqlSync({
       schema,
-      source: getIntrospectionQuery({ inputValueDeprecation: true, schemaDescription: true, specifiedByUrl: true })
+      source: getIntrospectionQuery({ inputValueDeprecation: true, schemaDescription: true, specifiedByUrl: true }),
     }).data
     const graphapi = buildFromIntrospection(introspection)
 
@@ -61,10 +56,8 @@ describe("Build GraphApi", () => {
   })
 })
 
-
 describe("Print schema from GraphApi", () => {
   it("should build the same graphapi from printed graphql schema", async () => {
-
     const source = loadFile("example.graphql")
     const schema = buildSchema(source, { noLocation: true })
     const graphapi = buildFromSchema(schema)
@@ -77,8 +70,8 @@ describe("Print schema from GraphApi", () => {
   })
 })
 
-describe("Test options", () => {
-  it("should enabled simple enum by default for graphql schema", () => {
+describe("Enums", () => {
+  it("should build enum values with descriptions and deprecation", () => {
     const source = `
       enum Color {
         BLUE
@@ -95,16 +88,17 @@ describe("Test options", () => {
       components: {
         enums: {
           Color: {
-            title: 'Color',
-            type: 'string',
-            enum: ['BLUE', 'RED', 'GREEN'],
+            title: "Color",
+            type: "enum",
             values: {
-              'RED': { description: 'Red color', deprecated: true },
-              'GREEN': { description: 'Green color', deprecated: { reason: "not used" } }
-            }
-          }
-        }
-      }
+              BLUE: {},
+              RED: { description: "Red color", deprecation: { reason: "No longer supported" } },
+              GREEN: { description: "Green color", deprecation: { reason: "not used" } },
+            },
+          },
+        },
+      },
     })
+    expect(Object.keys(graphapi.components!.enums!.Color.values)).toEqual(["BLUE", "RED", "GREEN"])
   })
 })
